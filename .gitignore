@@ -34,6 +34,6 @@
 *.sdf
 *.sln
 *.opendb
-.vs
-
+*.vs
+*.VC.db
 Debug

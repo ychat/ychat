@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "dispatcher_mgr_t.h"
-#include "event_watcher_t.h"
+#include "zk_watcher_t.h"
 #include "dispatcher_t.h"
 
 namespace ychat
@@ -12,7 +12,7 @@ namespace ychat
 
 	}
 
-	void dispatcher_mgr_t::init ()
+	void dispatcher_mgr_t::init()
 	{
 
 	}
@@ -27,7 +27,7 @@ namespace ychat
 		(void)stop;
 	}
 
-	void dispatcher_mgr_t::on_event (msg_queue_change_t &msg_queue_change)
+	void dispatcher_mgr_t::on_event (msg_queue_slots_change_t &msg_queue_change)
 	{
 		if (msg_queue_change.queue_id_.size() == 0)
 		{
@@ -42,6 +42,7 @@ namespace ychat
 			{
 				(itr)->second->stop ();
 			}
+			return;
 		}
 
 		for (std::vector<uint32_t>::iterator queue_id_itr =
@@ -55,6 +56,16 @@ namespace ychat
 				//todo ...
 			}
 		}
+	}
+
+	void dispatcher_mgr_t::on_event(redis_addr_change_t &change)
+	{
+		throw std::logic_error("The method or operation is not implemented.");
+	}
+
+	void dispatcher_mgr_t::on_event(mongodb_addr_change_t &change)
+	{
+		throw std::logic_error("The method or operation is not implemented.");
 	}
 
 }

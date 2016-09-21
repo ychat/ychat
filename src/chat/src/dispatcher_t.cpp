@@ -17,7 +17,7 @@ namespace ychat
 
 	void dispatcher_t::stop ()
 	{
-
+		is_stop_ = true;
 	}
 
 	void dispatcher_t::init ()
