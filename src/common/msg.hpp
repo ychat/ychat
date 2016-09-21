@@ -103,14 +103,14 @@ namespace ychat
 		msg_time_t time_;
 	};
 
-	struct label_friend
+	struct label_friend :msg_t
 	{
 		user_id_t user_id_;
 		std::string label_;
 		std::string result_;// 'ok','no friendship'or'system error'
 	};
 
-	struct group_chat
+	struct group_chat :msg_t
 	{
 		group_id_t group_id_;
 		msg_time_t send_time_;//
@@ -118,24 +118,24 @@ namespace ychat
 		std::string data_;
 	};
 
-	struct group_chat_ack
+	struct group_chat_ack :msg_t
 	{
 		msg_time_t ack_time_;
 		msg_id_t dst_msg_id_;//dstination group_chat'msg_id_.
 	};
 
-	struct join_group
+	struct join_group: msg_t
 	{
 		group_id_t group_id_;
 	};
 
-	struct join_group_result
+	struct join_group_result :msg_t
 	{
 		group_id_t group_id_;
 		std::string result_; //'ok','full','no find group','already joined','system error'
 	};
 
-	struct group_add_member_notify
+	struct group_add_member_notify: msg_t
 	{
 		group_id_t group_id_;
 		user_id_t member_id_;
@@ -143,12 +143,12 @@ namespace ychat
 		std::string user_icon_;
 	};
 
-	struct leave_group
+	struct leave_group: msg_t
 	{
 		group_id_t group_id_;
 	};
 
-	struct group_del_member_notify
+	struct group_del_member_notify: msg_t
 	{
 		group_id_t group_id_;
 		user_id_t user_id_;
