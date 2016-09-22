@@ -3,7 +3,7 @@
 #include "zk_watcher_t.h"
 #include "dispatcher_t.h"
 #include "lock_guard.hpp"
-#include <algorithm>
+#include "outstream_pool_mgr_t.h"
 
 namespace ychat
 {
@@ -16,7 +16,7 @@ namespace ychat
 
 	void dispatcher_mgr_t::init()
 	{
-
+		outstream_pool_mgr_ = new outstream_pool_mgr_t();
 	}
 
 	void dispatcher_mgr_t::on_event (start_t &start)

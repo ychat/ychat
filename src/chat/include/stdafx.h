@@ -13,6 +13,8 @@
 #include <map>
 #include <set>
 #include <list>
+#include <algorithm>
+
 
 #include "lib_acl.h"
 #include "acl_cpp/lib_acl.hpp"

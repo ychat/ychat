@@ -3,6 +3,7 @@
 namespace ychat
 {
 	class dispatcher_t;
+	class outstream_pool_mgr_t;
 
 	class dispatcher_mgr_t :public event_callback_t
 	{
@@ -21,6 +22,7 @@ namespace ychat
 		virtual void on_event(config_init_t &change);
 
 		typedef std::map<uint32_t, dispatcher_t*> dispatchers_t;
+
 		typedef dispatchers_t::iterator dispatchers_itr_t;
 	
 		dispatchers_t dispatchers_;
@@ -28,7 +30,7 @@ namespace ychat
 		bool is_stop_;
 		std::string redis_addr_;
 		std::string mongodb_addr_;
-
 		acl::redis_client_cluster *redis_cluster_;
+		outstream_pool_mgr_t *outstream_pool_mgr_;
 	};
 }
