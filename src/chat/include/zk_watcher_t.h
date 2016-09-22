@@ -24,24 +24,10 @@ namespace ychat
 		std::vector<uint32_t> queue_id_;
 	};
 
-	struct redis_addr_change_t
+	struct config_init_t
 	{
-		redis_addr_change_t(std::string &addr)
-			:addr_(addr)
-		{
-
-		}
-		std::string addr_;
-	};
-
-	struct mongodb_addr_change_t
-	{
-		mongodb_addr_change_t(std::string &addr)
-			:addr_(addr)
-		{
-
-		}
-		std::string addr_;
+		std::string redis_addr_;
+		std::string mongodb_addr_;
 	};
 
 	struct event_callback_t
@@ -49,8 +35,7 @@ namespace ychat
 		virtual void on_event(start_t &start) = 0;
 		virtual void on_event(stop_t &stop) = 0;
 		virtual void on_event(msg_queue_slots_change_t &change) = 0;
-		virtual void on_event(redis_addr_change_t &change) = 0;
-		virtual void on_event(mongodb_addr_change_t &change) = 0;
+		virtual void on_event(config_init_t &change) = 0;
 	};
 
 	class zk_watcher_t : public zk_client_t::zk_callback_t
@@ -68,6 +53,9 @@ namespace ychat
 		//ip:port
 		void  set_chat_service_addr(const std::string &addr);
 
+		void set_redis_addr_path (const std::string &path);
+
+		void set_mongodb_addr_path (const std::string &path);
 
 		void set_zk_client(zk_client_t *zk);
 
@@ -101,18 +89,23 @@ namespace ychat
 
 		virtual void on_not_watching(const char* path) override;
 
+		void update_queue_slots_data ();
+		
 		typedef std::set<event_callback_t *> callback_set_t;
 		typedef callback_set_t::iterator callback_set_iter_t;
 
 		callback_set_t callbacks_;
 
 		class zk_client_t *zk_client_;
-
+		//
 		std::string ychat_path;
 		std::string ychat_path_prefix_;
+
+		//ychat_path+"/queue_slots"
+		std::string queue_slot_path_;
+		std::string last_queue_slot_data_;
 		std::string addr_;
 		std::string redis_addr_path_;
 		std::string mongodb_addr_path_;
-		std::vector<uint32_t> queue_slots_;
 	};
 }

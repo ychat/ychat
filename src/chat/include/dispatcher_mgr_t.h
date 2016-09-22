@@ -18,16 +18,17 @@ namespace ychat
 
 		virtual void on_event (msg_queue_slots_change_t &msg_queue_change);
 
-		virtual void on_event(redis_addr_change_t &change) override;
-
-		virtual void on_event(mongodb_addr_change_t &change) override;
+		virtual void on_event(config_init_t &change);
 
 		typedef std::map<uint32_t, dispatcher_t*> dispatchers_t;
 		typedef dispatchers_t::iterator dispatchers_itr_t;
-
+	
 		dispatchers_t dispatchers_;
+
 		bool is_stop_;
 		std::string redis_addr_;
 		std::string mongodb_addr_;
+
+		acl::redis_client_cluster *redis_cluster_;
 	};
 }

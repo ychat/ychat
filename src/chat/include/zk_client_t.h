@@ -65,9 +65,38 @@ namespace ychat
 		const char* get_error_str (int code);
 
 	private:
+		struct event_t
+		{
+			event_t (int type, int state, const std::string &path);
+			bool stop_;
+			int type_;
+			int state_;
+			std::string path_;
+		};
 		static void watcher_callback (zhandle_t *zh, int type, int state,
 									  const char *path, void *watcherCtx);
+
+		void event_callback (event_t *event);
+
 		zhandle_t *zhandle;
 		zk_callback_t *event_callback_;
+		struct tranfor_event_fiber_t:acl::fiber
+		{
+			tranfor_event_fiber_t (ACL_MBOX *event_mbox,
+								   zk_client_t &zk_cli)
+				: event_mbox_(event_mbox),
+				zk_client_(zk_cli)
+			{
+
+			}
+			ACL_MBOX *event_mbox_;
+			zk_client_t &zk_client_;
+			virtual void run (void);
+			void stop (bool);
+			acl::channel<bool> wait_for_stop_;
+		};
+		friend struct tranfor_event_fiber_t;
+		tranfor_event_fiber_t *tranfor_event_fiber_;
+		ACL_MBOX *event_mbox_;
 	};
 }

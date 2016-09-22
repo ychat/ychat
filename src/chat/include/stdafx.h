@@ -18,7 +18,7 @@
 #include "acl_cpp/lib_acl.hpp"
 #include "fiber/lib_fiber.h"
 #include "fiber/lib_fiber.hpp"
-
+#include "stdlib/acl_mbox.h"
 
 #ifdef	WIN32
 #define	snprintf _snprintf

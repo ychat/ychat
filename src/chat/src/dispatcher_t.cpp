@@ -9,16 +9,12 @@ namespace ychat
 	{
 
 	}
-
-	void dispatcher_t::do_run ()
+	
+	dispatcher_t::~dispatcher_t ()
 	{
 
 	}
 
-	void dispatcher_t::stop ()
-	{
-		is_stop_ = true;
-	}
 
 	void dispatcher_t::init ()
 	{
@@ -28,6 +24,46 @@ namespace ychat
 	uint32_t dispatcher_t::get_msg_queue_id ()
 	{
 		return msg_queue_id_;
+	}
+
+	void dispatcher_t::run (void)
+	{
+		//this block can't not block the fiber forever
+		init_mongodb();
+		do 
+		{
+
+		} while (is_stop_ == false);
+		char _;
+		unint_mongodb ();
+		wait_for_stop_ << _;
+	}
+
+	void dispatcher_t::stop (bool)
+	{
+		is_stop_ = true;
+		char _;
+		wait_for_stop_.pop (_);
+	}
+
+	void dispatcher_t::set_redis_cluster (acl::redis_client_cluster *cluster)
+	{
+		redis_cluster_ = cluster;
+	}
+
+	void dispatcher_t::set_mongodb_addr (const std::string &addr)
+	{
+		mongodb_addr_ = addr;
+	}
+
+	void dispatcher_t::init_mongodb ()
+	{
+		
+	}
+
+	void dispatcher_t::unint_mongodb ()
+	{
+
 	}
 
 }

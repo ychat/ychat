@@ -4,46 +4,11 @@
 #include "zk_client_t.h"
 #include "zk_watcher_t.h"
 #include "dispatcher_mgr_t.h"
+#include "config.h"
 
 
 namespace ychat
 {
-
-	static char *var_zk_add_str;
-	static char *var_chat_path_prefix_str;
-
-	acl::master_str_tbl var_conf_str_tab[] = {
-		{ "str", "127.0.0.1:2181", &var_zk_add_str },
-		{ "chat_path_prefix", "/service/chat/instance-",
-								&var_chat_path_prefix_str },
-
-		{ 0, 0, 0 }
-	};
-
-	static int  var_cfg_debug_enable;
-
-	acl::master_bool_tbl var_conf_bool_tab[] = {
-		{ "debug_enable", 1, &var_cfg_debug_enable },
-
-		{ 0, 0, 0 }
-	};
-
-	static int  var_cfg_io_timeout;
-	static int  var_cfg_zk_recv_timeout;
-
-	acl::master_int_tbl var_conf_int_tab[] = {
-		{ "io_timeout", 120, &var_cfg_io_timeout, 0, 0 },
-		{ "zk_recv_timeout", 120, &var_cfg_zk_recv_timeout, 0, 0 },
-		{ 0, 0, 0, 0, 0 }
-	};
-	std::string service_addr;
-
-	acl::master_int64_tbl var_conf_int64_tab[] = {
-		{ 0, 0, 0, 0, 0 }
-	};
-
-	//////////////////////////////////////////////////////////////////////////
-
 	chat_service::chat_service (void)
 	{}
 
@@ -77,17 +42,20 @@ namespace ychat
 		zk_client_ = new zk_client_t;
 
 		zk_watch_ = new zk_watcher_t;
-		zk_watch_->set_chat_path_prefix(var_chat_path_prefix_str);
-		zk_watch_->set_chat_service_addr(service_addr);
+		zk_watch_->set_chat_path_prefix(g_config.chat_path_prefix_);
+		zk_watch_->set_chat_service_addr(g_config.service_addr_);
+		zk_watch_->set_redis_addr_path (g_config.redis_addr_path_);
+		zk_watch_->set_mongodb_addr_path (g_config.mongodb_addr_path_);
 		zk_watch_->set_zk_client(zk_client_);
+		zk_watch_->watch (dispatcher_mgr_);
 
-		int ret = zk_client_->init(var_zk_add_str, 
-				var_cfg_zk_recv_timeout, zk_watch_);
+		int ret = zk_client_->init(g_config.zk_addr_, 
+				g_config.zk_recv_timeout_, zk_watch_);
 		if (ret == false)
 		{
-			logger_fatal("zk_client init error, addr:%s", var_zk_add_str);
+			logger_fatal("zk_client init error, addr:%s", 
+						 g_config.zk_addr_);
 		}
-
 
 	}
 

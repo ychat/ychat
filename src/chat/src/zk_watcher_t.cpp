@@ -6,12 +6,16 @@ namespace ychat
 
 	void zk_watcher_t::watch (event_callback_t *callback)
 	{
-
+		callbacks_.insert (callback);
 	}
 
 	void zk_watcher_t::del (event_callback_t *callback)
 	{
-
+		callback_set_iter_t itr = callbacks_.find (callback);
+		if (itr != callbacks_.end())
+		{
+			callbacks_.erase (itr);
+		}
 	}
 
 	zk_watcher_t::zk_watcher_t ()
@@ -47,22 +51,14 @@ namespace ychat
 			acl_assert(real_path == path);
 		
 		//watch queue_slots
-		path = ychat_path + "queue_slots";
+		path = ychat_path + "/queue_slots";
 		Stat stat;
 		ret = zk_client_->exists (path, true, stat);
 		if (ret == ZOK)
 		{
 			if (stat.dataLength)
 			{
-				std::string buffer;
-				ret = zk_client_->get (path, true, buffer);
-				if (ret != ZOK)
-				{
-					logger_fatal ("zk get %s error;[%s]",
-								  path.c_str (),
-								  zk_client_->get_error_str (ret));
-				}
-				handle_queue_slots (buffer);
+				update_queue_slots_data (); 
 			}
 		}
 	}
@@ -85,31 +81,56 @@ namespace ychat
 	void zk_watcher_t::on_session_expired ()
 	{
 		logger (__FUNCTION__);
+
+		for (callback_set_iter_t it = callbacks_.begin ();
+		it != callbacks_.end ();
+			++it)
+		{
+			//notify 
+			(*it)->on_event (stop_t());
+		}
 	}
 
 	void zk_watcher_t::on_created (const char* path)
 	{
-		logger (__FUNCTION__);
+		logger ("function:%s,path:%s", __FUNCTION__, path);
+		
+		if (queue_slot_path_ == path)
+		{
+			update_queue_slots_data ();
+		}
 	}
 
 	void zk_watcher_t::on_deleted (const char* path)
 	{
-		logger (__FUNCTION__);
+		logger ("function:%s,path:%s", __FUNCTION__, path);
+		if (queue_slot_path_ == path)
+		{
+			update_queue_slots_data ();
+		}
 	}
 
 	void zk_watcher_t::on_changed (const char* path)
 	{
-		logger (__FUNCTION__);
+		logger ("function:%s, path:%s",__FUNCTION__,path);
+		if (queue_slot_path_ == path)
+		{
+			update_queue_slots_data ();
+		}
 	}
 
 	void zk_watcher_t::on_child_changed (const char* path)
 	{
-		logger (__FUNCTION__);
+		logger ("function:%s,path:%s", __FUNCTION__, path);
+		if (queue_slot_path_ == path)
+		{
+			update_queue_slots_data ();
+		}
 	}
 
 	void zk_watcher_t::on_not_watching (const char* path)
 	{
-		logger (__FUNCTION__);
+		logger ("function:%s,path:%s",__FUNCTION__,path);
 	}
 
 	int zk_watcher_t::recursive_create (const std::string& path, 
@@ -153,7 +174,6 @@ namespace ychat
 	{
 		if (buffer.size () == 0)
 		{
-			queue_slots_.clear ();
 			for (callback_set_iter_t it = callbacks_.begin ();
 				it != callbacks_.end();
 				++it)
@@ -172,25 +192,19 @@ namespace ychat
 
 	void zk_watcher_t::get_config()
 	{
-		std::string buffer;
-		int ret = zk_client_->get(redis_addr_path_, true, buffer);
+		config_init_t config;
+		//get redis addr
+		int ret = zk_client_->get(redis_addr_path_, true, config.redis_addr_);
 		if (ret != ZOK)
 		{
 			logger_fatal("zk get error,path:%s, code:%s",
 						 redis_addr_path_.c_str(),
 						 zk_client_->get_error_str(ret));
 		}
-		for(callback_set_iter_t it = callbacks_.begin();
-			it != callbacks_.end();
-			++it) {
-			//notify clear
-			(*it)->on_event(redis_addr_change_t(buffer));
-		}
-
 
 		//get mongodb addr
-		buffer.clear();
-		ret = zk_client_->get(mongodb_addr_path_, true, buffer);
+		
+		ret = zk_client_->get(mongodb_addr_path_, true, config.mongodb_addr_);
 		if(ret != ZOK) 
 		{
 			logger_fatal("zk get error,path:%s, code:%s",
@@ -201,7 +215,35 @@ namespace ychat
 			it != callbacks_.end();
 			++it) {
 			//notify clear
-			(*it)->on_event(mongodb_addr_change_t(buffer));
+			(*it)->on_event(config);
+		}
+	}
+
+	void zk_watcher_t::set_redis_addr_path (const std::string &path)
+	{
+		redis_addr_path_ = path;
+	}
+
+	void zk_watcher_t::set_mongodb_addr_path (const std::string &path)
+	{
+		mongodb_addr_path_ = path;
+	}
+
+	void zk_watcher_t::update_queue_slots_data ()
+	{
+		std::string buffer;
+		int ret = zk_client_->get (queue_slot_path_, true, buffer);
+		if (ret != ZOK)
+		{
+			logger_fatal ("zk get %s error;[%s]",
+						  queue_slot_path_.c_str (),
+						  zk_client_->get_error_str (ret));
+		}
+		//maybe nothing change.
+		if (buffer != last_queue_slot_data_)
+		{
+			last_queue_slot_data_ = buffer;
+			handle_queue_slots (buffer);
 		}
 	}
 
