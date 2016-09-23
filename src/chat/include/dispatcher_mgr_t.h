@@ -4,12 +4,12 @@ namespace ychat
 {
 	class dispatcher_t;
 	class outstream_pool_mgr_t;
-
+	class outstream_monitor_t;
 	class dispatcher_mgr_t :public event_callback_t
 	{
 	public:
 		dispatcher_mgr_t ();
-
+		~dispatcher_mgr_t ();
 	private:
 		void init ();
 
@@ -34,7 +34,7 @@ namespace ychat
 		std::string mongodb_addr_;
 		acl::redis_client_cluster *redis_cluster_;
 		outstream_pool_mgr_t *outstream_pool_mgr_;
-
+		outstream_monitor_t *outstream_monitor_;
 		outstream_info_update_t last_outstream_status_;
 	};
 }

@@ -4,6 +4,7 @@
 #include "dispatcher_t.h"
 #include "lock_guard.hpp"
 #include "outstream_pool_mgr_t.h"
+#include "outstream_monitor_t.h"
 
 namespace ychat
 {
@@ -11,22 +12,55 @@ namespace ychat
 
 	dispatcher_mgr_t::dispatcher_mgr_t ()
 	{
-
+		init ();
 	}
 
-	void dispatcher_mgr_t::init()
+	dispatcher_mgr_t::~dispatcher_mgr_t ()
 	{
-		outstream_pool_mgr_ = new outstream_pool_mgr_t();
+		if (outstream_monitor_->is_run ())
+		{
+			outstream_monitor_->stop (true);
+		}
+		for (dispatchers_itr_t itr = dispatchers_.begin ();
+		itr != dispatchers_.end ();
+			++itr)
+		{
+			itr->second->stop (true);
+			delete itr->second;
+		}
+		delete outstream_monitor_;
+		delete outstream_pool_mgr_;
+		delete redis_cluster_;
+	}
+
+	void dispatcher_mgr_t::init ()
+	{
+		outstream_pool_mgr_ = new outstream_pool_mgr_t ();
+		outstream_monitor_ = new outstream_monitor_t(*outstream_pool_mgr_);
 	}
 
 	void dispatcher_mgr_t::on_event (const start_t &start)
 	{
 		(void)start;
+
 	}
 
 	void dispatcher_mgr_t::on_event (const stop_t &stop)
 	{
 		(void)stop;
+		if (outstream_monitor_->is_run())
+		{
+			outstream_monitor_->stop (true);
+		}
+		
+		for (dispatchers_itr_t itr = dispatchers_.begin ();
+			itr != dispatchers_.end ();
+			++itr)
+		{
+			itr->second->stop (true);
+			delete itr->second;
+		}
+
 	}
 
 	void dispatcher_mgr_t::on_event (const msg_queue_slots_change_t 
@@ -135,7 +169,6 @@ namespace ychat
 			if (it->second.status_ == outstream_info_t::e_up &&
 				itr->second.status_ == outstream_info_t::e_down)//down.
 			{
-
 				down.push_back(it->first);
 			}
 
@@ -147,7 +180,7 @@ namespace ychat
 			++itr)
 		{
 			//remove 
-			outstream_pool_mgr_->del (*itr);
+			outstream_pool_mgr_->remove (itr->c_str());
 		}
 
 		for (std::vector<std::string>::const_iterator itr = news.begin ();
@@ -155,8 +188,12 @@ namespace ychat
 			++itr)
 		{
 			//remove 
-			outstream_pool_mgr_->add_addr(*itr);
+			outstream_pool_mgr_->set(itr->c_str(),0);
 		}
+		//start a thread to monitor outstream server.
+		if(outstream_monitor_->is_run() == false)
+			outstream_pool_mgr_->start_monitor (outstream_monitor_);
+
 	}
 
 }

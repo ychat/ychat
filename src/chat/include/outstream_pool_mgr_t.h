@@ -2,18 +2,13 @@
 namespace ychat
 {
 	class outstream_pool_t;
-	class outstream_pool_mgr_t
+	class acl::connect_pool;
+	class outstream_pool_mgr_t :public acl::connect_manager
 	{
 	public:
 		outstream_pool_mgr_t();
 		~outstream_pool_mgr_t();
-		outstream_pool_t *get(const std::string &addr_);
-		void del (const std::string &addr);
-		void add_addr (const std::string &addr);
-	private:
-		typedef std::map<std::string, outstream_pool_t*> outstream_pools_t;
-		typedef outstream_pools_t::iterator outstream_pools_itr_t;
-		outstream_pools_t outstream_pools_;
-		std::set<std::string > outstream_addrs_;
+		virtual acl::connect_pool* create_pool (const char* addr, 
+												size_t count, size_t idx) ;
 	};
 }

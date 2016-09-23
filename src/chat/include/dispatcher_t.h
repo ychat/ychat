@@ -18,10 +18,7 @@ namespace ychat
 		//stop the fiber.this function will yield current fiber.
 		void stop (bool );
 
-		void set_outstream_pool_mgr (outstream_pool_mgr_t *mgr)
-		{
-			outstream_pool_mgr_ = mgr;
-		}
+		void set_outstream_pool_mgr (outstream_pool_mgr_t *mgr);
 	private:
 		void init ();
 		virtual void run (void);
