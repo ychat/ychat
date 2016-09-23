@@ -13,13 +13,15 @@ namespace ychat
 	private:
 		void init ();
 
-		virtual void on_event (start_t &start);
+		virtual void on_event (const start_t &start);
 
-		virtual void on_event (stop_t &stop);
+		virtual void on_event (const stop_t &stop);
 
-		virtual void on_event (msg_queue_slots_change_t &msg_queue_change);
+		virtual void on_event (const msg_queue_slots_change_t &msg_queue_change);
 
-		virtual void on_event(config_init_t &change);
+		virtual void on_event(const config_init_t &change);
+
+		virtual void on_event (const outstream_info_update_t &update);
 
 		typedef std::map<uint32_t, dispatcher_t*> dispatchers_t;
 
@@ -32,5 +34,7 @@ namespace ychat
 		std::string mongodb_addr_;
 		acl::redis_client_cluster *redis_cluster_;
 		outstream_pool_mgr_t *outstream_pool_mgr_;
+
+		outstream_info_update_t last_outstream_status_;
 	};
 }

@@ -19,17 +19,18 @@ namespace ychat
 		outstream_pool_mgr_ = new outstream_pool_mgr_t();
 	}
 
-	void dispatcher_mgr_t::on_event (start_t &start)
+	void dispatcher_mgr_t::on_event (const start_t &start)
 	{
 		(void)start;
 	}
 
-	void dispatcher_mgr_t::on_event (stop_t &stop)
+	void dispatcher_mgr_t::on_event (const stop_t &stop)
 	{
 		(void)stop;
 	}
 
-	void dispatcher_mgr_t::on_event (msg_queue_slots_change_t &msg_queue_change)
+	void dispatcher_mgr_t::on_event (const msg_queue_slots_change_t 
+									 &msg_queue_change)
 	{
 		//clear all dispathers
 		if (msg_queue_change.queue_id_.size() == 0)
@@ -50,7 +51,7 @@ namespace ychat
 
 		//
 		dispatchers_t tmp;
-		for (std::vector<uint32_t>::iterator queue_id_itr =
+		for (std::vector<uint32_t>::const_iterator queue_id_itr =
 			 msg_queue_change.queue_id_.begin ();
 			 queue_id_itr != msg_queue_change.queue_id_.end ();
 			 queue_id_itr++)
@@ -80,7 +81,7 @@ namespace ychat
 		}
 	}
 
-	void dispatcher_mgr_t::on_event(config_init_t &change)
+	void dispatcher_mgr_t::on_event(const config_init_t &change)
 	{
 		//reset dispathers;
 		for (dispatchers_itr_t itr = dispatchers_.begin ();
@@ -110,5 +111,53 @@ namespace ychat
 		tmp.swap (dispatchers_);
 
 	}
+
+	void dispatcher_mgr_t::on_event (const outstream_info_update_t &update)
+	{
+		if (last_outstream_status_.infos_ == update.infos_)
+			return;
+
+		std::vector<std::string> news, down;
+
+		for (std::map<std::string, outstream_info_t>::const_iterator it 
+			 = update.infos_.begin ();
+			it != update.infos_.end();
+			++it)
+		{
+			std::map<std::string, outstream_info_t>::iterator itr =
+				last_outstream_status_.infos_.find (it->first);
+			if (itr == last_outstream_status_.infos_.end())
+			{
+				news.push_back (it->first);
+				continue;
+			}
+			//
+			if (it->second.status_ == outstream_info_t::e_up &&
+				itr->second.status_ == outstream_info_t::e_down)//down.
+			{
+
+				down.push_back(it->first);
+			}
+
+		}
+		// clear the outstream when it'status is down
+
+		for (std::vector<std::string>::const_iterator itr = down.begin ();
+			itr != down.end();
+			++itr)
+		{
+			//remove 
+			outstream_pool_mgr_->del (*itr);
+		}
+
+		for (std::vector<std::string>::const_iterator itr = news.begin ();
+			itr != news.end ();
+			++itr)
+		{
+			//remove 
+			outstream_pool_mgr_->add_addr(*itr);
+		}
+	}
+
 }
 

@@ -30,28 +30,28 @@ namespace ychat
 		get_config();
 
 		//sequence instance-,result will install-0,install-1,install-3,and so on
-		int ret = recursive_create (ychat_path_prefix_, std::string(), 
-										ychat_path, ZOO_SEQUENCE);
+		int ret = recursive_create (chat_path_prefix_, std::string(), 
+										chat_path, ZOO_SEQUENCE);
 		if (ret != ZOK)
 		{
 			logger_fatal ("zk_create %s error;[%s]",
-						  ychat_path_prefix_.c_str(), 
+						  chat_path_prefix_.c_str(), 
 						  zk_client_->get_error_str(ret));
 		}
 		//create ///addr path
 		std::string real_path;
-		std::string path = ychat_path + "/addr";
+		std::string path = chat_path + "/addr";
 		ret = zk_client_->create(path, addr_, real_path, ZOO_EPHEMERAL);
 		if(ret != ZOK) {
 			logger_fatal("zk_create %s error;[%s]",
-						 ychat_path_prefix_.c_str(),
+						 chat_path_prefix_.c_str(),
 						 zk_client_->get_error_str(ret));
 		}
 		else
 			acl_assert(real_path == path);
 		
 		//watch queue_slots
-		path = ychat_path + "/queue_slots";
+		path = chat_path + "/queue_slots";
 		Stat stat;
 		ret = zk_client_->exists (path, true, stat);
 		if (ret == ZOK)
@@ -162,7 +162,7 @@ namespace ychat
 
 	void zk_watcher_t::set_chat_path_prefix (const std::string &path)
 	{
-		ychat_path_prefix_ = path;
+		chat_path_prefix_ = path;
 	}
 
 	void zk_watcher_t::set_chat_service_addr (const std::string &addr)
@@ -217,6 +217,69 @@ namespace ychat
 			//notify clear
 			(*it)->on_event(config);
 		}
+
+	}
+
+	void zk_watcher_t::get_outstream_instance_info ()
+	{
+		std::vector<std::string> result;
+		int ret = zk_client_->get_children (outstream_path_, true, result);
+		if (ret!= ZOK){
+			logger_error ("zk_client get_children  error ,path:%s error_str:%s",
+						  outstream_path_.c_str(),
+						  zk_client_->get_error_str(ret));
+			return;
+		}
+		if (result.empty ())
+			return;
+		outstream_info_update_t new_info;
+		for (std::vector<std::string>::iterator itr = result.begin ();
+			itr != result.end();
+			++itr)
+		{
+
+			std::string status;
+			//get address ip:port string
+			std::string status_path = (*itr) + "/status";
+			ret = zk_client_->get (status_path, 0, status);
+			if (ret != ZOK)
+			{
+				logger_error ("zk_get error,path:%s,error_str:%s",
+							  status_path.c_str (),
+							  zk_client_->get_error_str (ret));
+			}
+			//this instance not set addr ?
+			if (status.size () == 0)
+				continue;
+
+			std::string addr;
+			//get address ip:port string
+			std::string addr_path = (*itr) + "/addr";
+			ret = zk_client_->get (addr_path, 0, addr);
+			if (ret != ZOK)
+			{
+				logger_error ("zk_get error,path:%s,error_str:%s", 
+							  addr_path.c_str(), 
+							  zk_client_->get_error_str(ret));
+			}
+			//this instance not set addr ?
+			if(addr.size() == 0)
+				continue;
+
+			outstream_info_t info;
+			info.addr_ = addr;
+			info.status_ = (strcasecmp (status.c_str (), "up") == 0)?
+				outstream_info_t::e_up: outstream_info_t::e_down;
+
+			new_info.infos_.insert(std::make_pair(addr, info));
+		}
+		for (callback_set_iter_t it = callbacks_.begin ();
+		it != callbacks_.end ();
+				++it)
+		{
+			(*it)->on_event (new_info);
+		}
+
 	}
 
 	void zk_watcher_t::set_redis_addr_path (const std::string &path)
@@ -246,6 +309,13 @@ namespace ychat
 			handle_queue_slots (buffer);
 		}
 	}
+
+	void zk_watcher_t::set_outstream_path (const std::string &path)
+	{
+		outstream_path_ = path;
+	}
+
+
 
 }
 

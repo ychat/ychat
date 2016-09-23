@@ -29,13 +29,29 @@ namespace ychat
 		std::string redis_addr_;
 		std::string mongodb_addr_;
 	};
-
+	struct outstream_info_t
+	{
+		//ip:port
+		std::string addr_;
+		//status up/down. true for up,false for down
+		enum status_t
+		{
+			e_up,
+			e_down,
+		};
+		status_t status_;
+	};
+	struct outstream_info_update_t
+	{
+		std::map<std::string ,outstream_info_t> infos_;
+	};
 	struct event_callback_t
 	{
-		virtual void on_event(start_t &start) = 0;
-		virtual void on_event(stop_t &stop) = 0;
-		virtual void on_event(msg_queue_slots_change_t &change) = 0;
-		virtual void on_event(config_init_t &change) = 0;
+		virtual void on_event(const start_t &start) = 0;
+		virtual void on_event(const stop_t &stop) = 0;
+		virtual void on_event(const msg_queue_slots_change_t &change) = 0;
+		virtual void on_event(const config_init_t &change) = 0;
+		virtual void on_event(const outstream_info_update_t &update) = 0;
 	};
 
 	class zk_watcher_t : public zk_client_t::zk_callback_t
@@ -50,6 +66,8 @@ namespace ychat
 		//eg:/service/ychat/instance-
 		void set_chat_path_prefix(const std::string &path);
 
+		void set_outstream_path (const std::string &path);
+
 		//ip:port
 		void  set_chat_service_addr(const std::string &addr);
 
@@ -59,8 +77,11 @@ namespace ychat
 
 		void set_zk_client(zk_client_t *zk);
 
+
 	private:
 		void get_config();
+
+		void get_outstream_instance_info ();
 
 		void handle_queue_slots(const std::string &buffer);
 
@@ -97,9 +118,14 @@ namespace ychat
 		callback_set_t callbacks_;
 
 		class zk_client_t *zk_client_;
-		//
-		std::string ychat_path;
-		std::string ychat_path_prefix_;
+		//chat servcie path
+		std::string chat_path;
+		//chat service path prefix
+		std::string chat_path_prefix_;
+		
+		//session layer 
+		std::string outstream_path_;
+
 
 		//ychat_path+"/queue_slots"
 		std::string queue_slot_path_;

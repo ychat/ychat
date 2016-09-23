@@ -66,5 +66,10 @@ namespace ychat
 
 	}
 
+	void dispatcher_t::set_outstream_pool_mgr (outstream_pool_mgr_t *mgr)
+	{
+		outstream_pool_mgr_ = mgr;
+	}
+
 }
 

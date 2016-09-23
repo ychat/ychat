@@ -5,8 +5,9 @@
 
 namespace ychat
 {
-	outstream_pool_t::outstream_pool_t(const char* addr, size_t max /*= 0*/)
-		:connect_pool(addr, max, 0)
+	outstream_pool_t::outstream_pool_t (const char* addr, size_t max /*= 0*/)
+		:connect_pool (addr, max, 0),
+		ref_ (0)
 	{
 
 	}
