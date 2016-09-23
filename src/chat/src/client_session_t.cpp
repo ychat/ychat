@@ -1,18 +1,25 @@
 #include "stdafx.h"
-#include "socket_session_t.h"
+#include "client_session_t.h"
 #include "auth_t.h"
 
 namespace ychat
 {
 
-	socket_session_t::socket_session_t (acl::socket_stream& conn)
+	client_session_t::client_session_t (acl::socket_stream& conn)
 		:conn_ (conn),
 		is_auth_ (false)
 	{
 
 	}
 
-	bool socket_session_t::doRun ()
+	bool client_session_t::run ()
+	{
+		if (check_auth () == false)
+			return false;
+	
+	}
+
+	bool client_session_t::check_auth ()
 	{
 		int msg_len = 0;
 		acl::string buffer;

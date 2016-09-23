@@ -143,6 +143,33 @@ namespace ychat
 	}
 
 
+	int zk_client_t::recursive_create (const std::string& path, 
+									   const std::string& value, 
+									   std::string &real_path, 
+									   int flag)
+	{
+		std::string::size_type pos = 0;
+		int ret = ZOK;
+		do
+		{
+			pos = path.find ('/', pos + 1);
+			if (pos == std::string::npos)
+			{
+				break;
+			}
+			real_path.clear ();
+			ret = create (path.substr (0, pos),
+						  std::string (),
+						  real_path,
+						  0);
+			if (ret != ZOK || ret != ZNODEEXISTS)
+				return ret;
+			pos = pos + 1;
+		} while (true);
+
+		return create (path.substr (0, pos), value, real_path, 0);
+	}
+
 	void zk_client_t::watcher_callback (zhandle_t *zh,
 										int type,
 										int state,

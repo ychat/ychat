@@ -30,7 +30,6 @@ namespace ychat
 		}
 		delete outstream_monitor_;
 		delete outstream_pool_mgr_;
-		delete redis_cluster_;
 	}
 
 	void dispatcher_mgr_t::init ()

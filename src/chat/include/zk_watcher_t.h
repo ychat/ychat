@@ -18,17 +18,23 @@ namespace ychat
 	{
 
 	};
+	struct zk_status_update_t 
+	{
+		enum status_t
+		{
+			e_connecting,
+			e_connected,
+			e_associating,
+			e_session_expired,
+		};
+		status_t status_;
 
+	};
 	struct msg_queue_slots_change_t
 	{
 		std::vector<uint32_t> queue_id_;
 	};
 
-	struct config_init_t
-	{
-		std::string redis_addr_;
-		std::string mongodb_addr_;
-	};
 	struct outstream_info_t
 	{
 		//ip:port
@@ -47,11 +53,26 @@ namespace ychat
 	};
 	struct event_callback_t
 	{
-		virtual void on_event(const start_t &start) = 0;
-		virtual void on_event(const stop_t &stop) = 0;
-		virtual void on_event(const msg_queue_slots_change_t &change) = 0;
-		virtual void on_event(const config_init_t &change) = 0;
-		virtual void on_event(const outstream_info_update_t &update) = 0;
+		virtual void on_event (const start_t &start)
+		{
+
+		}
+		virtual void on_event (const stop_t &stop)
+		{
+
+		}
+		virtual void on_event (const msg_queue_slots_change_t &change)
+		{
+
+		}
+		virtual void on_event (const outstream_info_update_t &update)
+		{
+
+		}
+		virtual void on_event (const zk_status_update_t &status)
+		{
+
+		}
 	};
 
 	class zk_watcher_t : public zk_client_t::zk_callback_t
@@ -64,31 +85,18 @@ namespace ychat
 		void del(event_callback_t *callback);
 
 		//eg:/service/ychat/instance-
-		void set_chat_path_prefix(const std::string &path);
+		void set_chat_service_path(const std::string &path);
 
 		void set_outstream_path (const std::string &path);
 
-		//ip:port
-		void  set_chat_service_addr(const std::string &addr);
-
-		void set_redis_addr_path (const std::string &path);
-
-		void set_mongodb_addr_path (const std::string &path);
-
 		void set_zk_client(zk_client_t *zk);
 
-
+		void do_watch ();
 	private:
-		void get_config();
 
 		void get_outstream_instance_info ();
 
-		void handle_queue_slots(const std::string &buffer);
-
-		int recursive_create(const std::string& path,
-							 const std::string& value,
-							 std::string real_path,
-							 int flag);
+		void handle_queue_slots_update(const std::string &buffer);
 
 		virtual void on_connected() override;
 
@@ -121,11 +129,10 @@ namespace ychat
 		//chat servcie path
 		std::string chat_path;
 		//chat service path prefix
-		std::string chat_path_prefix_;
+		std::string chat_service_path_;
 		
 		//session layer 
 		std::string outstream_path_;
-
 
 		//ychat_path+"/queue_slots"
 		std::string queue_slot_path_;

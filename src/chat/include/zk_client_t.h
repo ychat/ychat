@@ -62,6 +62,11 @@ namespace ychat
 						   bool watch,
 						   std::vector<std::string> &result);
 
+		int recursive_create (const std::string& path,
+							  const std::string& value,
+							  std::string& real_path,
+							  int flag);
+
 		const char* get_error_str (int code);
 
 	private:
