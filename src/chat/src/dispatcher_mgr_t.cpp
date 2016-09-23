@@ -25,7 +25,7 @@ namespace ychat
 		itr != dispatchers_.end ();
 			++itr)
 		{
-			itr->second->stop (true);
+			itr->second->stop ();
 			delete itr->second;
 		}
 		delete outstream_monitor_;
@@ -56,7 +56,7 @@ namespace ychat
 			itr != dispatchers_.end ();
 			++itr)
 		{
-			itr->second->stop (true);
+			itr->second->stop ();
 			delete itr->second;
 		}
 
@@ -77,7 +77,7 @@ namespace ychat
 				itr != dispatchers_.end();
 				++itr)
 			{
-				(itr)->second->stop (true);
+				(itr)->second->stop ();
 			}
 			return;
 		}
@@ -109,40 +109,9 @@ namespace ychat
 			itr != tmp.end();
 				++itr)
 		{
-			itr->second->stop (true);
+			itr->second->stop ();
 			delete itr->second;
 		}
-	}
-
-	void dispatcher_mgr_t::on_event(const config_init_t &change)
-	{
-		//reset dispathers;
-		for (dispatchers_itr_t itr = dispatchers_.begin ();
-			itr != dispatchers_.end ();
-			++itr)
-		{
-			itr->second->stop (true);
-			delete itr->second;
-		}
-		redis_addr_ = change.redis_addr_;
-		if (redis_cluster_)
-			delete redis_cluster_;
-		redis_cluster_ = new acl::redis_client_cluster;
-		//2 seconds
-		redis_cluster_->set (redis_addr_.c_str (), 0, 2, 2);
-
-		//remake dispather
-		dispatchers_t tmp;
-		for (dispatchers_itr_t itr = dispatchers_.begin ();
-		itr != dispatchers_.end ();
-			++itr)
-		{
-			dispatcher_t *dispatcher = new dispatcher_t (itr->first);
-			dispatcher->set_redis_cluster (redis_cluster_);
-			tmp[itr->first] = dispatcher;
-		}
-		tmp.swap (dispatchers_);
-
 	}
 
 	void dispatcher_mgr_t::on_event (const outstream_info_update_t &update)

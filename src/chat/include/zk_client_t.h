@@ -97,7 +97,7 @@ namespace ychat
 			ACL_MBOX *event_mbox_;
 			zk_client_t &zk_client_;
 			virtual void run (void);
-			void stop (bool);
+			void stop ();
 			acl::channel<bool> wait_for_stop_;
 		};
 		friend struct tranfor_event_fiber_t;

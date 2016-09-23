@@ -285,7 +285,7 @@ namespace ychat
 		wait_for_stop_ << value;
 	}
 
-	void zk_client_t::tranfor_event_fiber_t::stop (bool)
+	void zk_client_t::tranfor_event_fiber_t::stop ()
 	{
 		//notify tranfor_event_fiber_ stop;
 		int _ = 0;

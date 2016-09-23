@@ -19,8 +19,6 @@ namespace ychat
 
 		virtual void on_event (const msg_queue_slots_change_t &msg_queue_change);
 
-		virtual void on_event(const config_init_t &change);
-
 		virtual void on_event (const outstream_info_update_t &update);
 
 		typedef std::map<uint32_t, dispatcher_t*> dispatchers_t;

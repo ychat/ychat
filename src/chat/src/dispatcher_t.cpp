@@ -39,7 +39,7 @@ namespace ychat
 		wait_for_stop_ << _;
 	}
 
-	void dispatcher_t::stop (bool)
+	void dispatcher_t::stop ()
 	{
 		is_stop_ = true;
 		char _;

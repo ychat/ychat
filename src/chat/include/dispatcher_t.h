@@ -16,7 +16,7 @@ namespace ychat
 		//
 		void set_mongodb_addr (const std::string &addr);
 		//stop the fiber.this function will yield current fiber.
-		void stop (bool );
+		void stop ();
 
 		void set_outstream_pool_mgr (outstream_pool_mgr_t *mgr);
 	private:
