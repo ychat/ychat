@@ -79,6 +79,11 @@ namespace ychat
 	
 	}
 
+	void chat_service::on_event(stop_t &stop)
+	{
+
+	}
+
 	void chat_service::proc_on_exit (void)
 	{
 		logger (">>>proc_on_exit<<<");

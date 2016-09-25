@@ -33,7 +33,10 @@ namespace ychat
 		void proc_on_exit (void);
 
 		virtual void on_event (const zk_status_update_t &status);
-		void init ();
+
+		virtual void on_event(stop_t &stop);
+
+		void init();
 	private:
 		std::string redis_addr_;
 		std::string mongodb_addr_;

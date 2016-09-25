@@ -32,7 +32,6 @@ namespace ychat
 		init_mongodb();
 		do 
 		{
-
 		} while (is_stop_ == false);
 		char _;
 		unint_mongodb ();
