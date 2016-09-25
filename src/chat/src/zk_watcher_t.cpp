@@ -34,9 +34,10 @@ namespace ychat
 		{
 			if (stat.dataLength)
 			{
-				update_queue_slots_data ();
+				update_queue_slots ();
 			}
 		}
+		update_outstream_instance_info();
 	}
 
 	void zk_watcher_t::on_session_expired ()
@@ -58,7 +59,11 @@ namespace ychat
 		
 		if (queue_slot_path_ == path)
 		{
-			update_queue_slots_data ();
+			update_queue_slots ();
+		}
+		else if(outstream_path_ == path) 
+		{
+			update_outstream_instance_info();
 		}
 	}
 
@@ -67,7 +72,11 @@ namespace ychat
 		logger ("function:%s,path:%s", __FUNCTION__, path);
 		if (queue_slot_path_ == path)
 		{
-			update_queue_slots_data ();
+			update_queue_slots ();
+		}
+		else if (outstream_path_ == path)
+		{
+			update_outstream_instance_info();
 		}
 	}
 
@@ -76,7 +85,11 @@ namespace ychat
 		logger ("function:%s, path:%s",__FUNCTION__,path);
 		if (queue_slot_path_ == path)
 		{
-			update_queue_slots_data ();
+			update_queue_slots ();
+		}
+		else if(outstream_path_ == path) 
+		{
+			update_outstream_instance_info();
 		}
 	}
 
@@ -85,7 +98,11 @@ namespace ychat
 		logger ("function:%s,path:%s", __FUNCTION__, path);
 		if (queue_slot_path_ == path)
 		{
-			update_queue_slots_data ();
+			update_queue_slots ();
+		}
+		else if(outstream_path_ == path) 
+		{
+			update_outstream_instance_info();
 		}
 	}
 
@@ -145,12 +162,12 @@ namespace ychat
 		zk_client_ = zk;
 	}
 
-	void zk_watcher_t::get_outstream_instance_info ()
+	void zk_watcher_t::update_outstream_instance_info ()
 	{
 		std::vector<std::string> result;
 		int ret = zk_client_->get_children (outstream_path_, true, result);
 		if (ret!= ZOK){
-			logger_error ("zk_client get_children  error \
+			logger_warn ("zk_client get_children  error \
 						  ,path:%s error_str:%s",
 						  outstream_path_.c_str(),
 						  zk_client_->get_error_str(ret));
@@ -170,7 +187,7 @@ namespace ychat
 			ret = zk_client_->get (status_path, 0, status);
 			if (ret != ZOK)
 			{
-				logger_error ("zk_get error,path:%s,error_str:%s",
+				logger_warn("zk_get error,path:%s,error_str:%s",
 							  status_path.c_str (),
 							  zk_client_->get_error_str (ret));
 			}
@@ -184,7 +201,7 @@ namespace ychat
 			ret = zk_client_->get (addr_path, 0, addr);
 			if (ret != ZOK)
 			{
-				logger_error ("zk_get error,path:%s,error_str:%s", 
+				logger_warn("zk_get error,path:%s,error_str:%s", 
 							  addr_path.c_str(), 
 							  zk_client_->get_error_str(ret));
 			}
@@ -208,13 +225,13 @@ namespace ychat
 
 	}
 
-	void zk_watcher_t::update_queue_slots_data ()
+	void zk_watcher_t::update_queue_slots ()
 	{
 		std::string buffer;
 		int ret = zk_client_->get (queue_slot_path_, true, buffer);
 		if (ret != ZOK)
 		{
-			logger_fatal ("zk get %s error;[%s]",
+			logger_warn("zk get %s error;[%s]",
 						  queue_slot_path_.c_str (),
 						  zk_client_->get_error_str (ret));
 		}
