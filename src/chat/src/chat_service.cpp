@@ -23,13 +23,14 @@ namespace ychat
 
 		conn.set_rw_timeout (0);
 
-		client_session_t socket_sess (conn);
-		client_sessions_.insert (&socket_sess);
+		client_session_t client_sess (conn);
+		client_sess.set_redis_cluster(redis_cluster_);
+		client_sessions_.insert (&client_sess);
 		//here is in a fiber.
-		socket_sess.run ();
-		if (client_sessions_.find(&socket_sess) != client_sessions_.end())
+		client_sess.run ();
+		if (client_sessions_.find(&client_sess) != client_sessions_.end())
 		{
-			client_sessions_.erase (client_sessions_.find (&socket_sess));
+			client_sessions_.erase (client_sessions_.find (&client_sess));
 		}
 
 		logger ("disconnect from %s", conn.get_peer ());

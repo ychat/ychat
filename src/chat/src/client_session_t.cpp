@@ -68,6 +68,11 @@ namespace ychat
 			return false;
 	}
 
+	void client_session_t::stop()
+	{
+		is_stop_ = true;
+	}
+
 	bool client_session_t::handle_msg(char type,
 									  int len, 
 									  const char *data)
