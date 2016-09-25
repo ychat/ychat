@@ -94,7 +94,7 @@ namespace ychat
 		void do_watch ();
 	private:
 
-		void get_outstream_instance_info ();
+		void update_outstream_instance_info ();
 
 		void handle_queue_slots_update(const std::string &buffer);
 
@@ -118,7 +118,7 @@ namespace ychat
 
 		virtual void on_not_watching(const char* path) override;
 
-		void update_queue_slots_data ();
+		void update_queue_slots ();
 		
 		typedef std::set<event_callback_t *> callback_set_t;
 		typedef callback_set_t::iterator callback_set_iter_t;

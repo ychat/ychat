@@ -4,16 +4,10 @@ namespace ychat
 	{
 	public:
 		client_session_t(acl::socket_stream& conn);
-		void set_redis_cluster(acl::redis_client_cluster *redis_cluster)
-		{
-			redis_cluster_ = redis_cluster;
-		}
+		void set_redis_cluster(acl::redis_client_cluster *redis_cluster);
 		void run ();
 		bool check_auth ();
-		void stop()
-		{
-			is_stop_ = true;
-		}
+		void stop();
 		bool handle_msg(char type, int len, const char *data);
 	private:
 		bool is_stop_;
