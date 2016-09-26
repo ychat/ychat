@@ -1,0 +1,55 @@
+{
+    "ychat": {
+        "user_": {
+            "client_id": "919292828",
+            "icon_id": "",
+            "friends": [
+                {
+                    "id": "192282783",
+                    "laber": "陈老师"
+                }
+            ],
+            "goups": [
+                "199191"
+            ],
+            "add_friend_reqs": [
+                {
+                    "msg_type": 3,
+                    "msg_id_": "",
+                    "source_id_": "",
+                    "dst_id_": "",
+                    "time_": "",
+                    "user_id_": "text_msg",
+                    "result_": "",
+                    "delete_": false
+                }
+            ],
+            "notifies": [
+                {}
+            ]
+        }
+    },
+    "groups": [
+        {
+            "group_id": "199191",
+            "group_name": "",
+            "members": [
+                {
+                    "user_id_": "",
+                    "laber_": ""
+                }
+            ]
+        }
+    ],
+    "chat_log": [
+        {
+            "msg_id_": "",
+            "from_": "",
+            "to_": "",
+            "data": "",
+            "time_": "",
+            "ack_time": "",
+            "group_id_": ""
+        }
+    ]
+}
