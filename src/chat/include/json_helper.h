@@ -1,9 +1,11 @@
 #pragma once
 namespace ychat
 {
+	class msg_t;
 	class json_helper
 	{
 	public:
-		bool to_object (const char *data, std::vector<int> &object);
+		static bool to_msg (const char *data, std::vector<int> &object);
+		static msg_t *to_msg (const char *data);
 	};
 }

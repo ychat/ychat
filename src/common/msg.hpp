@@ -2,41 +2,7 @@
 
 namespace ychat
 {
-	enum msg_type_t
-	{
-		/*one to one chat*/
-		e_chat = 1,
-		e_chat_ack,
-
-		/*add friend*/
-		e_add_friend,
-		e_add_friend_result,
-		e_add_friend_result_ack,
-
-		/*del friend*/
-		e_del_friend,
-		e_del_friend_notify, //notify another that lost a friend.
-		e_del_friend_notify_ack, //ack the del_friend_notify msg.
-
-		/*make the friend a label,eg:best friend ,classmake....*/
-		e_label_friend,
-
-		/*group chat*/
-		e_group_chat,
-		e_group_chat_ack,
-
-		/*join group*/
-		e_join_group,
-		e_join_group_result,
-		
-		e_group_add_member_notify,
-
-		/*leave group*/
-		e_leave_group,
-
-		e_group_del_member_notify,
-
-	};
+	
 	typedef uint64_t msg_id_t;
 	typedef uint64_t msg_time_t;
 	typedef std::string user_id_t;
@@ -44,6 +10,42 @@ namespace ychat
 
 	struct msg_t
 	{
+		enum msg_type_t
+		{
+			/*one to one chat*/
+			e_chat = 1,
+			e_chat_ack,
+
+			/*add friend*/
+			e_add_friend,
+			e_add_friend_result,
+			e_add_friend_result_ack,
+
+			/*del friend*/
+			e_del_friend,
+			e_del_friend_notify, //notify another that lost a friend.
+			e_del_friend_notify_ack, //ack the del_friend_notify msg.
+
+									 /*make the friend a label,eg:best friend ,classmake....*/
+			e_label_friend,
+
+			/*group chat*/
+			e_group_chat,
+			e_group_chat_ack,
+
+			/*join group*/
+			e_join_group,
+			e_join_group_result,
+
+			e_group_add_member_notify,
+
+			/*leave group*/
+			e_leave_group,
+
+			e_group_del_member_notify,
+
+		};
+
 		msg_type_t msg_type_;
 		msg_id_t msg_id_;//uuid 
 		std::string source_id_;//who send the msg.
@@ -64,7 +66,7 @@ namespace ychat
 		msg_id_t dst_msg_id_;//dstination chat_msg'id.
 	};
 
-	struct add_friend :msg_t
+	struct add_friend_t :msg_t
 	{
 		user_id_t user_id_;
 		std::string text_msg_;//text messgae to someone,eg:"hello ,I am A."

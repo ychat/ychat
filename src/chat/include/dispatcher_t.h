@@ -2,6 +2,7 @@
 namespace ychat
 {
 	class outstream_pool_mgr_t;
+	struct msg_t;
 	//peek msg from redis queue,and dispatch to connector.
 	class dispatcher_t : public acl::fiber
 	{
@@ -24,6 +25,8 @@ namespace ychat
 		virtual void run (void);
 		void init_mongodb ();
 		void unint_mongodb ();
+		bool push_to_mongodb (msg_t * msg);
+		bool push_to_outstream (acl::string & data, const char *client_id);
 		uint32_t msg_queue_id_;
 		bool is_stop_;
 		acl::channel<char> wait_for_stop_;
