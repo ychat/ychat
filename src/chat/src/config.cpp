@@ -7,14 +7,17 @@ namespace ychat
 
 	config_t::config_t ()
 	{
-		str_tab_ = new acl::master_str_tbl[7] 
+		str_tab_ = new acl::master_str_tbl[8] 
 		{
 			{"str", "127.0.0.1:2181", &zk_addr_},
 			{"chat_path_prefix", "/ychat/service/chat/instance-", &chat_path_prefix_},
 			{"service_addr", "0.0.0.0:9001", &service_addr_},
 			{"redis_addr","/ychat/config/redis/addr", &redis_addr_path_},
 			{"mongodb_addr", "/ychat/config/mongodb/addr", &mongodb_addr_path_},
-			{0, 0, 0},
+			{"msg_queue_prefix","/ychat/msg_queue/",&msg_queue_prefix_},
+			{"friend_map_prefix","/ychat/friends/",&friend_map_prefix_},
+
+			{0, 0, 0}
 		};
 
 		bool_tab_ = new acl::master_bool_tbl[2]

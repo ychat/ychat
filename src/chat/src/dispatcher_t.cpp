@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "dispatcher_t.h"
 #include "msg.hpp"
-#include "json_helper.h"
+#include "json_helper_t.h"
 #include "outstream_pool_mgr_t.h"
 #include "outstream.h"
 
@@ -49,7 +49,7 @@ namespace ychat
 					break;
 				continue;
 			}
-			msg_t *msg = json_helper::to_msg(data);
+			msg_t *msg = json_helper_t::to_msg(data);
 			if (msg == NULL)
 			{
 				logger_warn ("to_msg error,data%s",data.c_str());
@@ -63,7 +63,7 @@ namespace ychat
 				break;
 			}
 
-			if (push_to_outstream (data, msg->dst_id_.c_str()) == false)
+			if (push_to_outstream (data, msg->to_.c_str()) == false)
 			{
 				delete msg;
 				continue;

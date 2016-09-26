@@ -48,8 +48,8 @@ namespace ychat
 
 		msg_type_t msg_type_;
 		msg_id_t msg_id_;//uuid 
-		std::string source_id_;//who send the msg.
-		std::string dst_id_;//destination id,if msg_type != e_gchat ,dst_id = client_id.
+		std::string from_;//who send the msg.
+		std::string to_;//destination id,if msg_type != e_gchat ,dst_id = client_id.
 							//if msg_type = e_gchat,dst_id= group_id.
 		msg_time_t time_;//msg receive time
 	};

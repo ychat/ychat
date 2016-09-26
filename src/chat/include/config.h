@@ -17,11 +17,16 @@ namespace ychat
 		char *mongodb_addr_path_;
 		// default false
 		int  debug_enable_;
-		// 120 (seconds)
+		//default 120 (seconds)
 		int  io_timeout_;
-		// 120 (seconds)
+		//default 120 (seconds)
 		int  zk_recv_timeout_;
-
+		// default "/ychat/msg_queue/{queue_id}"
+		char *msg_queue_prefix_;
+		// default "/ychat/friends/{client_id}"
+		char *friend_map_prefix_;
+		// default "/ychat/uuid"
+		char *msg_uuid_;
 		//for acl
 		acl::master_str_tbl *str_tab_;
 		acl::master_bool_tbl *bool_tab_;
