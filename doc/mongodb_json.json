@@ -14,16 +14,25 @@
             ],
             "add_friend_reqs": [
                 {
-                    "msg_type": 3,
                     "msg_id_": "",
-                    "source_id_": "",
-                    "dst_id_": "",
+                    "from_": "",
+                    "to_": "",
                     "time_": "",
-                    "user_id_": "text_msg",
-                    "result_": "",
-                    "delete_": false
+                    "user_id_":"",
+					"text_msg_":"hello world",
+                    "result_": ""
                 }
             ],
+			"join_group_reqs":[
+				{
+					"req_id_":"",
+					"group_id":"",
+					"user_id_":"",
+					"text_msg_":"",
+					"result_":"",
+					"time_":""
+				}
+			],
             "notifies": [
                 {}
             ]
@@ -32,6 +41,7 @@
     "groups": [
         {
             "group_id": "199191",
+			"creater_id_":"",
             "group_name": "",
             "members": [
                 {
@@ -43,6 +53,7 @@
     ],
     "chat_log": [
         {
+			"_id":"",
             "msg_id_": "",
             "from_": "",
             "to_": "",
