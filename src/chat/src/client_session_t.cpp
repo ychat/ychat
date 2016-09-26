@@ -65,7 +65,51 @@ namespace ychat
 
 		} while (is_stop_ == false);
 	}
-	bool client_session_t::handle_msg (const char *data,int len)
+
+	void client_session_t::init_mongodb ()
+	{
+		mongo_client_ = mongoc_client_new (mongodb_addr_.c_str ());
+		if (mongo_client_ == NULL)
+		{
+			logger_error ("mongoc_client_new error,addr:%s",
+						  mongodb_addr_.c_str());
+
+		}
+		mongo_db_ = mongoc_client_get_database (mongo_client_,
+												g_config.mongo_db_name_);
+		if (mongo_db_ == NULL)
+		{
+			logger_error ("mongoc_client_get_database error,%s",
+						  g_config.mongo_db_name_);
+		}
+
+		user_clt_ = mongoc_client_get_collection (mongo_client_, 
+									g_config.mongo_db_name_, 
+									g_config.mongodb_user_collection_name_);
+		if (user_clt_ == NULL)
+		{
+			logger_error ("mongoc_client_get_collection error,
+						  db_name:%s,collection:%s",
+						  g_config.mongo_db_name_,
+						  g_config.mongodb_user_collection_name_);
+		}
+		chat_log_clt_ = mongoc_client_get_collection (mongo_client_,
+										  g_config.mongo_db_name_,
+								  g_config.mongodb_chat_log_collection_name_);
+		if (chat_log_clt_ == NULL)
+		{
+			logger_error ("mongoc_client_get_collection error",
+						  g_config.mongo_db_name_,
+						  g_config.mongodb_chat_log_collection_name_);
+		}
+	}
+
+	void client_session_t::uninit_mongodb ()
+	{
+
+	}
+
+	bool client_session_t::handle_msg (const char *data, int len)
 	{
 		msg_t *msg = json_helper_t::to_msg (data);
 		if (msg == NULL)
@@ -82,6 +126,8 @@ namespace ychat
 			case msg_t::e_chat_ack:
 				ret = handle_chat_ack_msg (msg);
 				break;
+			case msg_t::e_add_friend:
+				ret = handle_add_friend (msg);
 			default:
 				break;
 		}
@@ -171,9 +217,36 @@ namespace ychat
 	bool client_session_t::handle_chat_ack_msg (msg_t * msg)
 	{
 		chat_msg_ack_t *ack = (chat_msg_ack_t*)msg;
-		ack->ack_time_ = time (NULL);
 
+		acl::string msg_id;
+		bool result = false;
+		msg_id.format ("%llu",msg->msg_id_);
+		bson_error_t error;
+		bson_t *selector = BCON_NEW ("msg_id_",BCON_UTF8(msg_id.c_str()));
+		bson_t *update =  BCON_NEW ("$set", "{", "ack_time_",
+									BCON_DATE_TIME (time (NULL)),"}");
 
+		if (!mongoc_collection_update (chat_log_clt_, MONGOC_UPDATE_NONE,
+			selector, update, NULL, &error))
+		{
+			size_t len;
+			char *selector_str = bson_as_json (selector,&len);
+			char *update_str = bson_as_json (update, &len);
+			if (selector_str && update_str)
+			{
+				logger_warn ("mongoc_collection_update error,query:%s,update:%s",
+							 selector_str,
+							 update_str);
+			}
+			if(selector_str)
+				bson_free (selector_str);
+			if(update_str)
+				bson_free (update_str);
+		}
+		result = true;
+		bson_destroy (update);
+		bson_destroy (selector);
+		return result;
 	}
 
 	long long client_session_t::get_uuid ()
@@ -187,6 +260,17 @@ namespace ychat
 			return -1;
 		}
 		return result;
+	}
+
+	bool client_session_t::handle_add_friend (msg_t * msg)
+	{
+		add_msg_to_user_ (msg,msg->from_);
+		add_msg_to_user_ (msg, msg->to_);
+	}
+
+	void client_session_t::add_msg_to_user_ (msg_t * msg, std::string client_id)
+	{
+
 	}
 
 }

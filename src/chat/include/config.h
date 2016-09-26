@@ -27,6 +27,14 @@ namespace ychat
 		char *friend_map_prefix_;
 		// default "/ychat/uuid"
 		char *msg_uuid_;
+
+		//mongo db name default "ychat"
+		char *mongo_db_name_;
+
+		//default users_
+		char *mongodb_user_collection_name_;
+
+		char *mongodb_chat_log_collection_name_;
 		//for acl
 		acl::master_str_tbl *str_tab_;
 		acl::master_bool_tbl *bool_tab_;
