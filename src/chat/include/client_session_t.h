@@ -24,7 +24,7 @@ namespace ychat
 		bool handle_chat_ack_msg (msg_t * msg);
 		long long get_uuid ();
 		bool handle_add_friend (msg_t * msg);
-		void add_msg_to_user_ (msg_t * msg, std::string from_);
+		bool add_msg_to_user_(msg_t * msg, std::string client_id);
 		bool is_stop_;
 		bool is_auth_;
 		acl::redis_client_cluster *redis_cluster_;

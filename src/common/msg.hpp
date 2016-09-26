@@ -3,8 +3,8 @@
 namespace ychat
 {
 	
-	typedef uint64_t msg_id_t;
-	typedef uint64_t msg_time_t;
+	typedef int64_t msg_id_t;
+	typedef time_t msg_time_t;
 	typedef std::string user_id_t;
 	typedef std::string group_id_t;
 
@@ -70,6 +70,8 @@ namespace ychat
 	{
 		user_id_t user_id_;
 		std::string text_msg_;//text messgae to someone,eg:"hello ,I am A."
+		//default "",value is "yes","no" or "";
+		std::string result_;
 	};
 
 	struct add_friend_result_t : msg_t

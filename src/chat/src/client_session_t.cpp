@@ -229,9 +229,8 @@ namespace ychat
 		if (!mongoc_collection_update (chat_log_clt_, MONGOC_UPDATE_NONE,
 			selector, update, NULL, &error))
 		{
-			size_t len;
-			char *selector_str = bson_as_json (selector,&len);
-			char *update_str = bson_as_json (update, &len);
+			char *selector_str = bson_as_json (selector,NULL);
+			char *update_str = bson_as_json (update, NULL);
 			if (selector_str && update_str)
 			{
 				logger_warn ("mongoc_collection_update error,query:%s,update:%s",
@@ -243,7 +242,9 @@ namespace ychat
 			if(update_str)
 				bson_free (update_str);
 		}
-		result = true;
+		else {
+			result = true;
+		}
 		bson_destroy (update);
 		bson_destroy (selector);
 		return result;
@@ -266,11 +267,46 @@ namespace ychat
 	{
 		add_msg_to_user_ (msg,msg->from_);
 		add_msg_to_user_ (msg, msg->to_);
+		return false;
 	}
 
-	void client_session_t::add_msg_to_user_ (msg_t * msg, std::string client_id)
+	bool client_session_t::add_msg_to_user_ (msg_t * msg, std::string client_id)
 	{
+		bool result = false;
+		add_friend_t *addf = (add_friend_t *)msg;
+		bson_t *selector = BCON_NEW("user_id_",client_id.c_str());
+		bson_t *update = 
+				BCON_NEW("$push", 
+							"{",
+							"add_friend_reqs","{",
+								"msg_id_", BCON_INT64(addf->msg_id_),
+								"from_", BCON_UTF8(addf->from_.c_str()),
+								"to_", BCON_UTF8(addf->to_.c_str()),
+								"time_",BCON_DATE_TIME(addf->time_),
+								"user_id_",BCON_UTF8(addf->user_id_.c_str()),
+								"text_msg_",BCON_UTF8(addf->text_msg_.c_str()),
+								"result_","",
+							"}",
+						"}");
 
+		bson_error_t error;
+
+		if(!mongoc_collection_update(user_clt_, MONGOC_UPDATE_NONE,
+		   selector, update, NULL, &error)) 			   
+		{
+			char *update_json = bson_as_json(update, NULL);
+			if (update_json)
+			{
+				logger_warn("mongoc_collection_update error,update json:%s",
+							update_json);
+				bson_free(update_json);
+			}
+		}else
+			result = true;
+
+		bson_destroy(update);
+		bson_destroy(selector);
+		return result;
 	}
 
 }

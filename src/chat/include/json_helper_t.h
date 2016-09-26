@@ -1,7 +1,7 @@
 #pragma once
+#include "msg.hpp"
 namespace ychat
 {
-	class msg_t;
 	class json_helper_t
 	{
 	public:

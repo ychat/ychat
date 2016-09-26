@@ -1,8 +1,8 @@
 {
     "ychat": {
         "user_": {
-            "client_id": "919292828",
-            "icon_id": "",
+            "user_id_": "919292828",
+            "icon_id_": "",
             "friends": [
                 {
                     "id": "192282783",
@@ -12,7 +12,7 @@
             "goups": [
                 "199191"
             ],
-            "add_friend_reqs": [
+            "send_add_friend_reqs": [
                 {
                     "msg_id_": "",
                     "from_": "",
