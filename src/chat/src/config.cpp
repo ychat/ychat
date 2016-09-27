@@ -7,7 +7,7 @@ namespace ychat
 
 	config_t::config_t ()
 	{
-		str_tab_ = new acl::master_str_tbl[12] 
+		str_tab_ = new acl::master_str_tbl[13] 
 		{
 			{"str", "127.0.0.1:2181", &zk_addr_},
 			{"chat_path_prefix", "/ychat/service/chat/instance-", &chat_path_prefix_},
@@ -17,9 +17,11 @@ namespace ychat
 			{"msg_queue_prefix", "/ychat/msg_queue/", &msg_queue_prefix_},
 			{"friend_map_prefix", "/ychat/friends/", &friend_map_prefix_},
 			{"user_id_prefix", "/ychat/users/",&user_id_prefix_},
+			{"group_map_prefix","/ychat/group/",&group_map_prefix_},
 			{"mongo_db_name","ychat",&mongo_db_name_},
 			{"mongodb_user_collection_name", "user_", &mongodb_user_collection_name_},
 			{"mongodb_chat_log_collection_name","chat_log", &mongodb_chat_log_collection_name_},
+
 			{0, 0, 0}
 		};
 

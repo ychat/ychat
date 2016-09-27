@@ -27,6 +27,8 @@ namespace ychat
 		char *friend_map_prefix_;
 		// default "/ychat/user/{user_id}"
 		char *user_id_prefix_;
+		//group info in redis. default /yhat/group/
+		char *group_map_prefix_;
 		// default "/ychat/uuid"
 		char *msg_uuid_;
 

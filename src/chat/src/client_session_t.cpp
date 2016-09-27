@@ -131,7 +131,18 @@ namespace ychat
 				break;
 			case msg_t::e_add_friend_result:
 				ret = handle_add_friend_result (msg);
-
+				break;;
+			case msg_t::e_del_friend:
+				ret = handle_del_friend (msg);
+				break;
+			case msg_t::e_label_friend:
+				ret = handle_label_friend (msg);
+				break;
+			case msg_t::e_group_chat:
+				ret = handle_group_chat (msg);
+				break;
+			case msg_t::e_group_chat_ack:
+				ret = handle_group_chat_ack (msg);
 			default:
 				break;
 		}
@@ -165,14 +176,14 @@ namespace ychat
 		//current time.
 		msg->time_ = time (NULL);
 		msg->msg_id_ = get_uuid ();
-		if (check_friend (msg->from_, msg->to_) == false)
+		if (check_friend_from_redis (msg->from_, msg->to_) == false)
 		{
 			logger_warn ("%s,%s not friend",
 						 msg->from_.c_str(),
 						 msg->to_.c_str());
 			return false;
 		}
-		if (to_msg_queue(msg))
+		if (to_redis_queue(msg))
 		{
 			logger ("to_msg_queue error");
 			return false;
@@ -180,7 +191,7 @@ namespace ychat
 		return true;
 	}
 
-	bool client_session_t::check_friend (const std::string &client_id, 
+	bool client_session_t::check_friend_from_redis (const std::string &client_id, 
 										 const std::string &friend_id)
 	{
 		acl::string client_key;
@@ -190,7 +201,7 @@ namespace ychat
 		return cmd.hexists(client_key.c_str(), friend_id.c_str());
 	}
 
-	bool client_session_t::to_msg_queue (msg_t *msg)
+	bool client_session_t::to_redis_queue (msg_t *msg)
 	{
 		uint32_t msg_queue_id = get_msg_queue_id (msg->to_);
 
@@ -222,6 +233,70 @@ namespace ychat
 		return true;
 	}
 
+	bool client_session_t::handle_group_chat (msg_t * msg)
+	{
+		group_chat_t * gchat = (group_chat_t*)msg;
+		std::map<acl::string, acl::string> group_info;
+		
+		if (get_group_info_from_redis(gchat->group_id_, group_info) == false)
+		{
+			logger_warn ("get_group_info_from_redis error");
+			return false;
+		}
+		for (std::map<acl::string, acl::string>::iterator 
+			 itr = group_info.begin ();itr!= group_info.end();++itr)
+		{
+			msg->to_ = itr->first;
+			msg->msg_id_ = get_uuid ();
+			if (to_redis_queue (msg) == false)
+			{
+				logger_warn ("to_redis_queue error");
+			}
+		}
+		return true;
+	}
+
+	bool client_session_t::handle_del_friend (msg_t * msg)
+	{
+		del_friend_t *delf = (del_friend_t*)msg;
+
+		if (del_friend_from_redis (msg->from_, msg->to_) == false)
+		{
+			logger_warn ("del_friend_from_redis error,user_id:%s,friend_id:%s",
+						 msg->from_.c_str (), msg->to_.c_str ());
+			return false;
+		}
+
+		if (del_friend_from_redis (msg->to_, msg->from_) == false)
+		{
+			logger_warn ("del_friend_from_redis error,user_id:%s,friend_id:%s",
+						 msg->from_.c_str (), msg->to_.c_str ());
+			return false;
+		}
+
+		if (del_friend_from_mongodb(msg->to_,msg->from_) == false)
+		{
+			logger_warn ("del_friend_from_mongodb error,user_id:%s,friend_id:%s",
+						 msg->from_.c_str (), msg->to_.c_str ()); 
+			return false;
+		}
+
+		if (del_friend_from_mongodb (msg->from_, msg->to_) == false)
+		{
+			logger_warn ("del_friend_from_mongodb error,user_id:%s,friend_id:%s",
+						 msg->from_.c_str(), msg->to_.c_str ());
+			return false;
+		}
+
+		if (to_redis_queue (msg) == false)
+		{
+			logger_warn ("to_redis_queue error");
+			return false;
+		}
+
+		return true;
+	}
+
 	bool client_session_t::get_username_from_redis (const std::string& user_id,
 										 std::string &username)
 	{
@@ -240,24 +315,78 @@ namespace ychat
 		{"user_id_": "192282783","laber_": "akzi"}
 	*/
 
-	bool client_session_t::add_friend_to_redis (std::string client_id,
+	bool client_session_t::add_friend_to_redis (std::string user_id,
 												std::string friend_id, 
 												const std::string &friend_name)
 	{
 
 		acl::json json;
 		acl::json_node &root = json.get_root ();
-		root.add_child (json.create_node ("user_id_", client_id.c_str ()));
+		root.add_child (json.create_node ("user_id_", user_id.c_str ()));
 		root.add_child (json.create_node ("laber_", friend_name.c_str ()));
 		const acl::string &str = json.to_string ();
 
 		acl::redis cmd(redis_cluster_);
 		acl::string key;
-		key.format ("%s%s", g_config.friend_map_prefix_, client_id.c_str ());
+		key.format ("%s%s", g_config.friend_map_prefix_, user_id.c_str ());
 		if (cmd.hset (key.c_str (), friend_id.c_str (), str.c_str ()) == false)
 		{
 			logger ("redis hset error,map:%s key:%s value:%s",
 					key.c_str(),friend_id.c_str(),str.c_str());
+			return false;
+		}
+		return true;
+	}
+
+	bool client_session_t::del_friend_from_redis (const std::string &user_id,
+												  const std::string &friend_id)
+
+	{
+		acl::redis cmd (redis_cluster_);
+		acl::string key;
+		key.format ("%s%s", g_config.friend_map_prefix_, user_id.c_str ());
+		if (cmd.hdel (key.c_str (), friend_id.c_str ()) == false)
+		{
+			logger_warn ("redis hdel error");
+			return false;
+		}
+		return true;
+	}
+
+	bool client_session_t::update_friend_laber_to_redis (
+		const std::string &user_id,
+		const std::string &friend_id, 
+		const std::string &label)
+	{
+		acl::redis cmd (redis_cluster_);
+
+		acl::string key;
+		key.format ("%s%s", g_config.friend_map_prefix_, user_id.c_str ());
+		acl::json json;
+		json.get_root ().
+			add_child (json.create_node ("user_id_",friend_id.c_str())).
+			add_child (json.create_node ("laber_", label.c_str ()));
+
+		if (cmd.hset (key.c_str (), friend_id.c_str (),
+			json.to_string ().c_str ()) == false)
+		{
+			logger_warn ("redis hset error");
+			return false;
+		}
+		return true;
+	}
+
+	bool client_session_t::get_group_info_from_redis (
+		const std::string &group_id, 
+		std::map<acl::string, acl::string> &result)
+	{
+		acl::redis cmd (redis_cluster_);
+		acl::string key;
+		key.format ("%s%s", g_config.group_map_prefix_,group_id.c_str ());
+
+		if (cmd.hgetall (key, result) == false)
+		{
+			logger_warn ("redis hgetall error,key:%s", key.c_str ());
 			return false;
 		}
 		return true;
@@ -327,7 +456,8 @@ namespace ychat
 			char *update_str = bson_as_json (update, NULL);
 			if (selector_str && update_str)
 			{
-				logger_warn ("mongoc_collection_update error,query:%s,update:%s",
+				logger_warn ("mongoc_collection_update \
+							  error,query:%s,update:%s",
 							 selector_str,
 							 update_str);
 			}
@@ -369,7 +499,7 @@ namespace ychat
 			logger_warn ("");
 			return false;
 		}
-		return to_msg_queue (msg);
+		return to_redis_queue (msg);
 	}
 
 	bool client_session_t::push_add_friend_to_db (msg_t * msg, 
@@ -418,7 +548,7 @@ namespace ychat
 					{ $set:{"add_friend_reqs.$.result_":"yes"}});
 
 	*/
-	bool client_session_t::update_add_friend_to_db (msg_t * msg, 
+	bool client_session_t::update_add_friend_result_to_db (msg_t * msg, 
 													std::string client_id)
 	{
 		add_friend_result_t *result = (add_friend_result_t*)msg;
@@ -455,12 +585,12 @@ namespace ychat
 	{
 		add_friend_result_t *result = (add_friend_result_t*)msg;
 
-		if (update_add_friend_to_db (msg, msg->from_) == false)
+		if (update_add_friend_result_to_db (msg, msg->from_) == false)
 		{
 			logger_warn ("update_add_friend_to_db error");
 			return false;
 		}
-		if (update_add_friend_to_db (msg, msg->to_) == false)
+		if (update_add_friend_result_to_db (msg, msg->to_) == false)
 		{
 			logger_warn ("update_add_friend_to_db error");
 			return false;
@@ -488,9 +618,23 @@ namespace ychat
 				logger_warn ("add_friend_to_user error");
 				return false;
 			}
-
+			if (add_friend_to_redis (msg->from_, msg->to_, to_name) == false)
+			{
+				logger_warn ("add_friend_to_redis error");
+				return false;
+			}
+			if (add_friend_to_redis (msg->to_, msg->from_, from_name) == false)
+			{
+				logger_warn ("add_friend_to_redis error");
+				return false;
+			}
 		}
-		to_msg_queue (msg);
+		if (to_redis_queue (msg) == false)
+		{
+			logger_warn ("to_redis_queue error");
+			return false;
+		}
+		return true;
 	}
 	bool client_session_t::add_friend_to_db (std::string user_id,
 											   std::string friend_id, 
@@ -514,10 +658,9 @@ namespace ychat
 			char *update_json = bson_as_json (update, NULL);
 			if (update_json)
 			{
-				logger_warn ("mongoc_collection_update error:%s,update json:%s",
+				logger_warn ("mongoc_collection_update error:%s,update:%s",
 							 error.message,
-							 update_json
-							 );
+							 update_json);
 				bson_free (update_json);
 			}
 		}
@@ -528,6 +671,123 @@ namespace ychat
 		if(update)
 			bson_destroy (update);
 		return ret;
+	}
+	/*
+	mongo shell 
+	db.user_.update( 
+		{"user_id_":"123"} ,
+			{ $pull:{"friends_":{"user_id_":"192282783"}}});
+
+	*/
+	bool client_session_t::del_friend_from_mongodb (const std::string &user_id, 
+													const std::string &friend_id)
+	{
+		bool ret = false;
+		bson_error_t error;
+
+		bson_t *selector = BCON_NEW ("user_id_", BCON_UTF8 (user_id.c_str ()));
+		bson_t *update = BCON_NEW ("$pull",
+									"{",
+										"friends_",
+											"{",
+												"user_id_",
+										  		BCON_UTF8 (friend_id.c_str ()),
+											"}",
+								   "}");
+
+		if (!mongoc_collection_update (user_clt_, MONGOC_UPDATE_NONE,
+			selector, update, NULL, &error))
+		{
+			char *update_json = bson_as_json (update, NULL);
+			if (update_json)
+			{
+				logger_warn ("mongoc_collection_update error:%s,update:%s",
+							 error.message,
+							 update_json);
+				bson_free (update_json);
+			}
+		}
+		else
+			ret = true;
+		if (selector)
+			bson_destroy (selector);
+		if (update)
+			bson_destroy (update);
+		return ret;
+
+	}
+	/*
+	mongo shell 
+	db.user_.update( {"user_id_":"123","friends_.user_id_":"192282783"} ,
+	{ $set:{"friends_.$.laber_":"world"}});
+
+	*/
+
+	bool client_session_t::update_friend_laber_to_mongodb (
+		const std::string &user_id,
+		const std::string &friend_id, 
+		const std::string &label)
+
+	{
+		bool ret = false;
+		bson_error_t error;
+
+		bson_t *selector = BCON_NEW ("user_id_",
+									 BCON_UTF8 (user_id.c_str ()),
+									 "friends_.user_id_",
+									 BCON_UTF8 (friend_id.c_str ()));
+		bson_t *update = BCON_NEW ("$set", "{",
+								   "friends_.$.laber_",
+								   BCON_UTF8 (label.c_str ()),
+								   "}");
+
+		if (!mongoc_collection_update (user_clt_, MONGOC_UPDATE_NONE,
+			selector, update, NULL, &error))
+		{
+			char *update_json = bson_as_json (update, NULL);
+			if (update_json)
+			{
+				logger_warn ("mongoc_collection_update error:%s,update:%s",
+							 error.message,
+							 update_json);
+				bson_free (update_json);
+			}
+		}
+		else
+			ret = true;
+		if (selector)
+			bson_destroy (selector);
+		if (update)
+			bson_destroy (update);
+		return ret;
+	}
+
+	
+
+	bool client_session_t::handle_label_friend (msg_t * msg)
+	{
+		label_friend_t *labelf = (label_friend_t*)msg;
+		if (update_friend_laber_to_mongodb(labelf->from_, 
+			labelf->to_,
+			labelf->label_) == false)
+		{
+			logger_warn ("update_friend_laber_to_mongodb error");
+			return false;
+		}
+
+		if (update_friend_laber_to_redis(labelf->from_,
+			labelf->to_,
+			labelf->label_) == false)
+		{
+			logger_warn ("update_friend_laber_to_redis error");
+			return false;
+		}
+		return true;
+	}
+
+	bool client_session_t::handle_group_chat_ack (msg_t * msg)
+	{
+
 	}
 
 }

@@ -52,15 +52,16 @@
         }
     ],
     "chat_log": [
-        {
-			"_id":"",
-            "msg_id_": "",
-            "from_": "",
-            "to_": "",
-            "data": "",
-            "time_": "",
-            "ack_time": "",
-            "group_id_": ""
-        }
+      {
+        "group_id_":"",//_ for oneTo one
+        "_id": "",
+        "msg_id_": "",
+        "from_": "",
+        "to_": "",
+        "data": "",
+        "time_": "",
+        "ack_time": "",
+        "group_id_": ""
+      }
     ]
 }

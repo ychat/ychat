@@ -23,10 +23,7 @@ namespace ychat
 
 			/*del friend*/
 			e_del_friend,
-			e_del_friend_notify, //notify another that lost a friend.
-			e_del_friend_notify_ack, //ack the del_friend_notify msg.
 
-									 /*make the friend a label,eg:best friend ,classmake....*/
 			e_label_friend,
 
 			/*group chat*/
@@ -56,12 +53,14 @@ namespace ychat
 
 	struct chat_msg_t :msg_t
 	{
+		//group_id_t group_id_;
 		msg_time_t ack_time_;// client ack msg timepoint
 		std::string data_;// msg data
 	};
 
 	struct chat_msg_ack_t :msg_t
 	{
+
 		msg_time_t ack_time_;
 		msg_id_t dst_msg_id_;//dstination chat_msg'id.
 	};
@@ -87,58 +86,43 @@ namespace ychat
 		msg_time_t ack_time_;
 	};
 
-	struct del_friend :msg_t
+	struct del_friend_t :msg_t
 	{
 		user_id_t user_id_;
 		msg_time_t time_;
-		std::string result_;//'ok','no friendship'or'system error'
 	};
 
-	struct del_friend_notify_t : msg_t
-	{
-		user_id_t user_id_;//the id of the friend just lost
-		msg_time_t time_;
-	};
-
-	struct del_friend_notify_ack_t : msg_t
-	{
-		msg_id_t dst_msg_id_;
-		msg_time_t time_;
-	};
-
-	struct label_friend :msg_t
+	struct label_friend_t :msg_t
 	{
 		user_id_t user_id_;
 		std::string label_;
-		std::string result_;// 'ok','no friendship'or'system error'
 	};
 
-	struct group_chat :msg_t
+	struct group_chat_t :msg_t
 	{
 		group_id_t group_id_;
-		msg_time_t send_time_;//
 		msg_time_t ack_time_;//if ack_time == 0 then this msg is not readed
 		std::string data_;
 	};
 
-	struct group_chat_ack :msg_t
+	struct group_chat_ack_t :msg_t
 	{
 		msg_time_t ack_time_;
 		msg_id_t dst_msg_id_;//dstination group_chat'msg_id_.
 	};
 
-	struct join_group: msg_t
+	struct join_group_t: msg_t
 	{
 		group_id_t group_id_;
 	};
 
-	struct join_group_result :msg_t
+	struct join_group_result_t:msg_t
 	{
 		group_id_t group_id_;
 		std::string result_; //'ok','full','no find group','already joined','system error'
 	};
 
-	struct group_add_member_notify: msg_t
+	struct group_add_member_notify_t: msg_t
 	{
 		group_id_t group_id_;
 		user_id_t member_id_;
@@ -146,12 +130,12 @@ namespace ychat
 		std::string user_icon_;
 	};
 
-	struct leave_group: msg_t
+	struct leave_group_t: msg_t
 	{
 		group_id_t group_id_;
 	};
 
-	struct group_del_member_notify: msg_t
+	struct group_del_member_notify_t: msg_t
 	{
 		group_id_t group_id_;
 		user_id_t user_id_;
