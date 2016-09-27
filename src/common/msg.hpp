@@ -76,7 +76,6 @@ namespace ychat
 
 	struct add_friend_result_t : msg_t
 	{
-		user_id_t user_id_;
 		msg_id_t dst_msg_id_;//dst_msg_id_ eq add_friend' msg_id_
 		bool result_;//true,for "yes",false for otherwise
 		std::string text_msg_;

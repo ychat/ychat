@@ -23,8 +23,10 @@ namespace ychat
 		int  zk_recv_timeout_;
 		// default "/ychat/msg_queue/{queue_id}"
 		char *msg_queue_prefix_;
-		// default "/ychat/friends/{client_id}"
+		// default "/ychat/friends/{user_id}"
 		char *friend_map_prefix_;
+		// default "/ychat/user/{user_id}"
+		char *user_id_prefix_;
 		// default "/ychat/uuid"
 		char *msg_uuid_;
 

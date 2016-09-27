@@ -1,42 +1,42 @@
 {
-    "ychat": {
-        "user_": {
-            "user_id_": "919292828",
-            "icon_id_": "",
-            "friends": [
-                {
-                    "id": "192282783",
-                    "laber": "陈老师"
-                }
-            ],
-            "goups": [
-                "199191"
-            ],
-            "send_add_friend_reqs": [
-                {
-                    "msg_id_": "",
-                    "from_": "",
-                    "to_": "",
-                    "time_": "",
-                    "user_id_":"",
-					"text_msg_":"hello world",
-                    "result_": ""
-                }
-            ],
-			"join_group_reqs":[
-				{
-					"req_id_":"",
-					"group_id":"",
-					"user_id_":"",
-					"text_msg_":"",
-					"result_":"",
-					"time_":""
-				}
-			],
-            "notifies": [
-                {}
-            ]
-        }
+    "ychat_": {
+      "user_": {
+        "username_": "akzi",
+        "user_id_": "919292828",
+        "icon_id_": "",
+        "friends_": [
+          {
+            "user_id_": "192282783",
+            "laber_": "陈老师"
+          }
+        ],
+        "goups_": [
+          "199191"
+        ],
+        "add_friend_reqs_": [
+          {
+            "msg_id_": "",
+            "from_": "",
+            "to_": "",
+            "time_": "",
+            "text_msg_": "hello world",
+            "result_": ""
+          }
+        ],
+        "join_group_reqs_": [
+          {
+            "req_id_": "",
+            "group_id": "",
+            "user_id_": "",
+            "text_msg_": "",
+            "result_": "",
+            "time_": ""
+          }
+        ],
+        "notifies_": [
+          { }
+        ]
+      }
     },
     "groups": [
         {
