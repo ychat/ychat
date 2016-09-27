@@ -1,9 +1,10 @@
 #include <bson.h>
 #include <bcon.h>
 #include <mongoc.h>
-#include "msg.hpp"
+
 namespace ychat
 {
+	struct msg_t;
 	class client_session_t
 	{
 	public:
@@ -34,8 +35,12 @@ namespace ychat
 
 		bool handle_group_chat_ack (msg_t * msg);
 
+		bool handle_join_group (msg_t * msg);
 
 		long long get_uuid ();
+
+		bool get_group_creator (const std::string & group_id_, 
+								std::string &creator);
 
 		// redis interface.
 		bool to_redis_queue (msg_t *msg);

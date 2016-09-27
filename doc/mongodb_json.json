@@ -26,8 +26,9 @@
         "join_group_reqs_": [
           {
             "req_id_": "",
-            "group_id": "",
+            "group_id_": "",
             "user_id_": "",
+            "creator_": "",
             "text_msg_": "",
             "result_": "",
             "time_": ""
@@ -38,30 +39,31 @@
         ]
       }
     },
-    "groups": [
+  "groups_": [
+    
+    {
+      "group_id_": "199191",
+      "creator_": "",
+      "group_name_": "",
+      "members_": [
+
         {
-            "group_id": "199191",
-			"creater_id_":"",
-            "group_name": "",
-            "members": [
-                {
-                    "user_id_": "",
-                    "laber_": ""
-                }
-            ]
+          "user_id_": "",
+          "laber_": ""
         }
-    ],
-    "chat_log": [
+      ]
+    }
+  ],
+    "chat_log_": [
       {
         "group_id_":"",//_ for oneTo one
         "_id": "",
         "msg_id_": "",
         "from_": "",
         "to_": "",
-        "data": "",
+        "data_": "",
         "time_": "",
-        "ack_time": "",
-        "group_id_": ""
+        "ack_time_": ""
       }
     ]
 }

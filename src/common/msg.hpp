@@ -10,6 +10,10 @@ namespace ychat
 
 	struct msg_t
 	{
+		msg_t ()
+		{
+
+		}
 		enum msg_type_t
 		{
 			/*one to one chat*/
@@ -42,7 +46,9 @@ namespace ychat
 			e_group_del_member_notify,
 
 		};
-
+		virtual ~chat_msg_t ()
+		{
+		}
 		msg_type_t msg_type_;
 		msg_id_t msg_id_;//uuid 
 		std::string from_;//who send the msg.
@@ -53,6 +59,7 @@ namespace ychat
 
 	struct chat_msg_t :msg_t
 	{
+		
 		//group_id_t group_id_;
 		msg_time_t ack_time_;// client ack msg timepoint
 		std::string data_;// msg data
@@ -114,6 +121,7 @@ namespace ychat
 	struct join_group_t: msg_t
 	{
 		group_id_t group_id_;
+		std::string text_msg_;
 	};
 
 	struct join_group_result_t:msg_t
