@@ -38,16 +38,18 @@ namespace ychat
 			e_join_group,
 			e_join_group_result,
 
-			e_group_add_member_notify,
+			e_notify_group_add_member,
 
 			/*leave group*/
 			e_leave_group,
+			e_group_del_member,
 
-			e_group_del_member_notify,
+			e_notify_group_del_member,
 
 		};
-		virtual ~chat_msg_t ()
+		virtual ~msg_t()
 		{
+
 		}
 		msg_type_t msg_type_;
 		msg_id_t msg_id_;//uuid 
@@ -118,27 +120,41 @@ namespace ychat
 		msg_id_t dst_msg_id_;//dstination group_chat'msg_id_.
 	};
 
-	struct join_group_t: msg_t
+	struct join_group_req_t: msg_t
 	{
 		group_id_t group_id_;
 		std::string text_msg_;
+		std::string result_;
 	};
 
-	struct join_group_result_t:msg_t
+	struct join_group_resp_t:msg_t
 	{
+		std::string req_id_;
 		group_id_t group_id_;
-		std::string result_; //'ok','full','no find group','already joined','system error'
+		bool result_;
 	};
 
-	struct group_add_member_notify_t: msg_t
+	struct notify_group_add_member_t: msg_t
 	{
 		group_id_t group_id_;
-		user_id_t member_id_;
+		user_id_t user_id_;
 		std::string username_;
 		std::string user_icon_;
 	};
 
+	struct notify_group_del_member_t : msg_t
+	{
+		group_id_t group_id_;
+		user_id_t user_id_;
+		std::string username_;
+	};
+
 	struct leave_group_t: msg_t
+	{
+		group_id_t group_id_;
+	};
+
+	struct group_del_member_t : msg_t
 	{
 		group_id_t group_id_;
 	};

@@ -148,6 +148,15 @@ namespace ychat
 			case msg_t::e_join_group:
 				ret = handle_join_group (msg);
 				break;
+			case msg_t::e_join_group_result:
+				ret = handle_join_group_result(msg);
+				break;
+			case msg_t::e_leave_group:
+				ret = handle_leave_group(msg);
+				break;
+			case msg_t::e_group_del_member:
+				ret = handle_group_del_menber(msg);
+				break;
 			default:
 				break;
 		}
@@ -238,7 +247,26 @@ namespace ychat
 		return true;
 	}
 
-	bool client_session_t::get_group_creator (const std::string & group_id_, 
+	bool client_session_t::add_group_to_user(const std::string &user_id,
+											 const std::string &username,
+											 const std::string& group_id)
+	{
+		
+
+		if (group_add_user_to_redis(user_id, username, group_id) == false)
+		{
+			logger_warn("group_add_user_to_redis error");
+			return false;
+		}
+		if (group_add_user_to_mongo(user_id, username, group_id) == false)
+		{
+			logger_warn("group_add_user_to_mongo error");
+			return false;
+		}
+		return true;
+	}
+
+	bool client_session_t::get_group_creator(const std::string & group_id_,
 											  std::string &creator)
 	{
 
@@ -403,7 +431,25 @@ namespace ychat
 		return true;
 	}
 
-	bool client_session_t::get_username_from_mongo (const std::string& user_id,
+	bool client_session_t::group_add_user_to_redis(const std::string &user_id,
+												   const std::string &username,
+												   const std::string& group_id)
+	{
+		acl::string key;
+		acl::redis cmd(redis_cluster_);
+
+		key.format("%s%s", g_config.group_map_prefix_, group_id.c_str());
+		
+		if (cmd.hset(key.c_str(),user_id.c_str(),username.c_str()) == false)
+		{
+			logger_warn("redis hset error,key:%s name:%s value:%s",
+						key.c_str(),user_id.c_str(),username.c_str());
+			return false;
+		}
+		return true;
+	}
+
+	bool client_session_t::get_username_from_mongo(const std::string& user_id,
 													std::string &username)
 	{
 		bool res = false;
@@ -773,7 +819,78 @@ namespace ychat
 		return ret;
 	}
 	
-	bool client_session_t::handle_label_friend (msg_t * msg)
+	bool client_session_t::update_join_group_result_to_mongodb(
+		const std::string &user_id, 
+		const std::string &req_id, 
+		const char *result)
+	{
+		bson_t *selector = BCON_NEW("user_id_",
+									BCON_UTF8(user_id.c_str()),
+									"join_group_reqs_.req_id_",
+									BCON_UTF8(req_id.c_str()));
+
+		bson_t *update = BCON_NEW("$set", "{",
+								  "join_group_reqs_.$.result_",
+								  BCON_UTF8(result),
+								  "}");
+		bson_error_t error;
+		bool ret = false;
+		if(!mongoc_collection_update(user_clt_, MONGOC_UPDATE_NONE,
+		   selector, update, NULL, &error)) {
+			char *update_json = bson_as_json(update, NULL);
+			if(update_json) {
+				logger_warn("mongoc_collection_update error:%s,update:%s",
+							error.message,
+							update_json);
+				bson_free(update_json);
+			}
+		}
+		else
+			ret = true;
+		if(selector)
+			bson_destroy(selector);
+		if(update)
+			bson_destroy(update);
+		return ret;
+	}
+
+	bool client_session_t::group_add_user_to_mongo(const std::string &user_id,
+												   const std::string &username,
+												   const std::string& group_id)
+	{
+		bool ret = false;
+		bson_error_t error;
+
+		bson_t *selector = BCON_NEW("group_id_", BCON_UTF8(group_id.c_str()));
+		bson_t *update = BCON_NEW("$push",
+								  "{",
+								    "members_",
+								    "{",
+								      "user_id_",BCON_UTF8(user_id.c_str()),
+								      "label_",BCON_UTF8(username.c_str()),
+								     "}",
+								  "}");
+
+		if(!mongoc_collection_update(group_clt_, MONGOC_UPDATE_NONE,
+		   selector, update, NULL, &error)) {
+			char *update_json = bson_as_json(update, NULL);
+			if(update_json) {
+				logger_warn("mongoc_collection_update error:%s,update:%s",
+							error.message,
+							update_json);
+				bson_free(update_json);
+			}
+		}
+		else
+			ret = true;
+		if(selector)
+			bson_destroy(selector);
+		if(update)
+			bson_destroy(update);
+		return ret;
+	}
+
+	bool client_session_t::handle_label_friend(msg_t * msg)
 	{
 		label_friend_t *labelf = (label_friend_t*)msg;
 		if (update_friend_laber_to_mongodb (labelf->from_,
@@ -804,7 +921,7 @@ namespace ychat
 
 	bool client_session_t::handle_join_group (msg_t* msg)
 	{
-		join_group_t *jgroup = (join_group_t*)msg;
+		join_group_req_t *jgroup = (join_group_req_t*)msg;
 		std::string user_id = jgroup->to_;
 		bool ret = false;
 		bson_error_t error;
@@ -821,13 +938,20 @@ namespace ychat
 								    "{",
 									 "join_group_reqs_",
 								      "{",
-										  "req_id_",BCON_INT64(jgroup->msg_id_),
-								          "group_id_", BCON_UTF8(jgroup->group_id_.c_str()),
-								          "user_id_",BCON_UTF8(jgroup->from_.c_str()),
-										  "creator_",BCON_UTF8(creator.c_str()),
-								          "text_msg_",BCON_UTF8(jgroup->text_msg_.c_str()),
-										  "result_","_",//for init
-										  "time_",BCON_DATE_TIME(time(NULL)),
+										  "req_id_",
+										   BCON_INT64(jgroup->msg_id_),
+								          "group_id_", 
+										   BCON_UTF8(jgroup->group_id_.c_str()),
+								          "user_id_"
+										  ,BCON_UTF8(jgroup->from_.c_str()),
+										  "creator_",
+										   BCON_UTF8(creator.c_str()),
+								          "text_msg_",
+										   BCON_UTF8(jgroup->text_msg_.c_str()),
+										  "result_",
+								           "_",//for init
+										  "time_",
+								           BCON_DATE_TIME(time(NULL)),
 								      "}",
 								     "}"
 								   );
@@ -857,6 +981,215 @@ namespace ychat
 			ret = false;
 		}
 		return ret;
+	}
+
+	bool client_session_t::handle_join_group_result(msg_t * msg)
+	{
+		join_group_resp_t *jgr= (join_group_resp_t*)msg;
+		const char* result = jgr->result_? "yes":"no";
+		bool ret = false;
+		bson_error_t error;
+		std::string user_id = jgr->from_;
+		std::string req_id = jgr->req_id_;
+
+		if (update_join_group_result_to_mongodb(user_id, req_id, result)
+			== false)
+		{
+			logger_warn("update_join_group_result_to_mongodb error");
+			return false;
+		}
+
+		if(update_join_group_result_to_mongodb(jgr->to_, req_id, result)
+		   == false) 
+		{
+			logger_warn("update_join_group_result_to_mongodb error");
+			return false;
+		}
+
+		if (jgr->result_)
+		{
+			std::string username;
+			if(get_username(user_id, username) == false) 
+			{
+				logger_warn("get_username error,user_id:%s", 
+							user_id.c_str());
+				return false;
+			}
+
+			if(add_group_to_user(user_id, username, jgr->group_id_) == false)
+			{
+				logger_warn("add_group_to_user errror");
+				return false;
+			}
+			notify_group_add_member(user_id, username, jgr->group_id_);
+		}
+		if(to_redis_queue(msg) == false)
+		{
+			logger_warn("to_redis_queue error");
+			return false;
+		}
+
+		return true;
+	}
+
+	void client_session_t::notify_group_add_member(const std::string &user_id,
+												   const std::string &username, 
+												   const std::string &group_id)
+	{
+		std::map<acl::string, acl::string> ginfo;
+		if (get_group_info_from_redis(group_id, ginfo) == false)
+		{
+			logger_warn("get_group_info_from_redis error");
+			return ;
+		}
+
+		for (std::map<acl::string, acl::string>::iterator 
+			 itr = ginfo.begin(); itr != ginfo.end();++itr)
+		{
+			if (itr->first != user_id.c_str())
+			{
+				notify_group_add_member_t notify;
+				notify.to_ = itr->first;
+				notify.msg_type_ = msg_t::e_notify_group_add_member;
+				notify.username_ = username;
+				notify.user_id_ = user_id;
+				notify.user_icon_ = "";//not support now;
+				notify.time_ = time(NULL);
+				notify.group_id_ = group_id;
+				notify.msg_id_ = 0;// not use for this message
+				notify.from_ = "system.group.manager";
+
+				if(to_redis_queue(&notify) == false)
+				{
+					logger_warn("to_redis_queue error");
+				}
+			}
+		}
+
+	}
+
+	bool client_session_t::handle_leave_group(msg_t * msg)
+	{
+		leave_group_t *lg = (leave_group_t *)msg;
+		std::string username;
+
+		if(get_username(msg->from_, username) == false)
+		{
+			logger_warn("get_username error,user_id:%s",
+						msg->from_.c_str());
+			return false;
+		}
+
+		if (del_user_from_redis(msg->from_, lg->group_id_) == false)
+		{
+			logger_warn("del_user_from_redis error");
+			return false;
+		}
+
+		if(del_user_from_mongo(msg->from_, lg->group_id_) == false)
+		{
+			logger_warn("del_user_from_mongo error");
+			return false;
+		}
+
+		notify_group_leave_member(msg->from_, username, lg->group_id_);
+	}
+
+	bool client_session_t::del_user_from_mongo(
+		const std::string &user_id, 
+		const std::string &group_id)
+	{
+		bool ret = false;
+		bson_error_t error;
+
+		bson_t *selector = BCON_NEW("group_id_", BCON_UTF8(user_id.c_str()));
+		bson_t *update = BCON_NEW("$pull",
+								  "{",
+								  "members_",
+								  "{",
+								    "user_id_",
+								     BCON_UTF8(user_id.c_str()),
+								  "}",
+								  "}");
+
+		if(!mongoc_collection_update(group_clt_, MONGOC_UPDATE_NONE,
+		   selector, update, NULL, &error)) 
+		{
+			char *update_json = bson_as_json(update, NULL);
+			if(update_json) 
+			{
+				logger_warn("mongoc_collection_update error:%s,update:%s",
+							error.message,
+							update_json);
+				bson_free(update_json);
+			}
+		}
+		else
+			ret = true;
+		if(selector)
+			bson_destroy(selector);
+		if(update)
+			bson_destroy(update);
+		return ret;
+	}
+
+	bool client_session_t::del_user_from_redis(const std::string &user_id, 
+											   const std::string &group_id)
+	{
+		acl::redis cmd(redis_cluster_);
+		acl::string key;
+		key.format("%s%s", g_config.group_map_prefix_, group_id.c_str());
+
+		if(cmd.hdel(key.c_str(), user_id.c_str()) == false) 
+		{
+			logger_warn("redis hdel error,key:%s, name:%s", 
+						key.c_str(),
+						user_id.c_str());
+			return false;
+		}
+		return true;
+	}
+
+	void client_session_t::notify_group_leave_member(
+		const std::string &user_id, 
+		const std::string &username, 
+		const std::string &group_id)
+	{
+		std::map<acl::string, acl::string> ginfo;
+		if(get_group_info_from_redis(group_id, ginfo) == false) {
+			logger_warn("get_group_info_from_redis error");
+			return;
+		}
+
+		for(std::map<acl::string, acl::string>::iterator
+			itr = ginfo.begin(); itr != ginfo.end(); ++itr) {
+			if(itr->first != user_id.c_str()) {
+				notify_group_del_member_t notify;
+				notify.to_ = itr->first;
+				notify.msg_type_ = msg_t::e_notify_group_del_member;
+				notify.username_ = username;
+				notify.user_id_ = user_id;
+				notify.time_ = time(NULL);
+				notify.group_id_ = group_id;
+				notify.msg_id_ = 0;// not use for this message
+				notify.from_ = "system.group.manager";
+
+				if(to_redis_queue(&notify) == false) {
+					logger_warn("to_redis_queue error");
+				}
+			}
+		}
+	}
+
+	bool client_session_t::handle_group_del_menber(msg_t * msg)
+	{
+		group_del_member_t *gdm = (group_del_member_t*)msg;
+		std::string creator;
+		if(get_group_creator(gdm->group_id_, creator) == false) 			{
+			logger_warn("get_group_creator error");
+			return false;
+		}
+		//todo...
 	}
 
 }
