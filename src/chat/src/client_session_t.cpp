@@ -69,40 +69,7 @@ namespace ychat
 
 	void client_session_t::init_mongodb ()
 	{
-		mongo_client_ = mongoc_client_new (mongodb_addr_.c_str ());
-		if (mongo_client_ == NULL)
-		{
-			logger_error ("mongoc_client_new error,addr:%s",
-						  mongodb_addr_.c_str ());
 
-		}
-		mongo_db_ = mongoc_client_get_database (mongo_client_,
-												g_config.mongo_db_name_);
-		if (mongo_db_ == NULL)
-		{
-			logger_error ("mongoc_client_get_database error,%s",
-						  g_config.mongo_db_name_);
-		}
-
-		user_clt_ = mongoc_client_get_collection (mongo_client_,
-												  g_config.mongo_db_name_,
-												  g_config.mongodb_user_collection_name_);
-		if (user_clt_ == NULL)
-		{
-			logger_error ("mongoc_client_get_collection error,
-						  db_name:%s, collection:%s",
-						  g_config.mongo_db_name_,
-						  g_config.mongodb_user_collection_name_);
-		}
-		chat_log_clt_ = mongoc_client_get_collection (mongo_client_,
-													  g_config.mongo_db_name_,
-													  g_config.mongodb_chat_log_collection_name_);
-		if (chat_log_clt_ == NULL)
-		{
-			logger_error ("mongoc_client_get_collection error",
-						  g_config.mongo_db_name_,
-						  g_config.mongodb_chat_log_collection_name_);
-		}
 	}
 
 	void client_session_t::uninit_mongodb ()
@@ -215,6 +182,14 @@ namespace ychat
 		return cmd.hexists (client_key.c_str (), friend_id.c_str ());
 	}
 
+	bool client_session_t::check_group_member (const std::string &group_id, 
+											   const std::string &user_id)
+	{
+		if (check_group_member_from_redis (group_id, user_id))
+			return true;
+		return false;
+	}
+
 	bool client_session_t::to_redis_queue (msg_t *msg)
 	{
 		uint32_t msg_queue_id = get_msg_queue_id (msg->to_);
@@ -258,7 +233,7 @@ namespace ychat
 			logger_warn("group_add_user_to_redis error");
 			return false;
 		}
-		if (group_add_user_to_mongo(user_id, username, group_id) == false)
+		if (group_add_user_to_db(user_id, username, group_id) == false)
 		{
 			logger_warn("group_add_user_to_mongo error");
 			return false;
@@ -313,14 +288,14 @@ namespace ychat
 			return false;
 		}
 
-		if (del_friend_from_mongodb (msg->to_, msg->from_) == false)
+		if (del_friend_from_db (msg->to_, msg->from_) == false)
 		{
 			logger_warn ("del_friend_from_mongodb error,user_id:%s,friend_id:%s",
 						 msg->from_.c_str (), msg->to_.c_str ());
 			return false;
 		}
 
-		if (del_friend_from_mongodb (msg->from_, msg->to_) == false)
+		if (del_friend_from_db (msg->from_, msg->to_) == false)
 		{
 			logger_warn ("del_friend_from_mongodb error,user_id:%s,friend_id:%s",
 						 msg->from_.c_str (), msg->to_.c_str ());
@@ -561,43 +536,7 @@ namespace ychat
 	bool client_session_t::push_add_friend_to_db (msg_t * msg,
 												  std::string client_id)
 	{
-		bool result = false;
-		add_friend_t *addf = (add_friend_t *)msg;
-		bson_t *selector = BCON_NEW ("user_id_", BCON_UTF8 (client_id.c_str ()));
-		bson_t *update =
-			BCON_NEW ("$push",
-					  "{",
-					  "add_friend_reqs",
-					  "{",
-					  "msg_id_", BCON_INT64 (addf->msg_id_),
-					  "from_", BCON_UTF8 (addf->from_.c_str ()),
-					  "to_", BCON_UTF8 (addf->to_.c_str ()),
-					  "time_", BCON_DATE_TIME (addf->time_),
-					  "text_msg_", BCON_UTF8 (addf->text_msg_.c_str ()),
-					  "result_", "_",// yes, no _
-					  "}",
-					  "}");
-
-		bson_error_t error;
-
-		if (!mongoc_collection_update (user_clt_, MONGOC_UPDATE_NONE,
-			selector, update, NULL, &error))
-		{
-			char *update_json = bson_as_json (update, NULL);
-			if (update_json)
-			{
-				logger_warn ("mongoc_collection_update error%s,update json:%s",
-							 error.message,
-							 update_json);
-				bson_free (update_json);
-			}
-		}
-		else
-			result = true;
-
-		bson_destroy (update);
-		bson_destroy (selector);
-		return result;
+		
 	}
 	/*
 	shell:
@@ -605,37 +544,10 @@ namespace ychat
 					{ $set:{"add_friend_reqs.$.result_":"yes"}});
 
 	*/
-	bool client_session_t::update_add_friend_result_to_db (msg_t * msg,
+	bool client_session_t::update_add_friend_result_to_db (msg_t * msg, 
 														   std::string client_id)
 	{
-		add_friend_result_t *result = (add_friend_result_t*)msg;
-		const char *res = result->result_?"yes":"no";
-		bool ret = false;
-		bson_error_t error;
-		bson_t *selector = BCON_NEW ("user_id_",
-									 BCON_UTF8 (client_id.c_str ()),
-									 "add_friend_reqs.msg_id_",
-									 BCON_INT64 (result->dst_msg_id_));
-
-		bson_t *update = BCON_NEW ("$set", "{",
-								   "add_friend_reqs.$.result_", res, "}");
-
-		if (!mongoc_collection_update (user_clt_, MONGOC_UPDATE_NONE,
-			selector, update, NULL, &error))
-		{
-			char *update_json = bson_as_json (update, NULL);
-			if (update_json)
-			{
-				logger_warn ("mongoc_collection_update error,update json:%s",
-							 update_json);
-				bson_free (update_json);
-			}
-		}
-		else
-			ret = true;
-		bson_destroy (selector);
-		bson_destroy (update);
-		return res;
+		//todo ...
 	}
 
 	bool client_session_t::handle_add_friend_result (msg_t * msg)
@@ -697,37 +609,7 @@ namespace ychat
 											 std::string friend_id,
 											 const std::string &friend_name)
 	{
-		bool ret = false;
-		bson_error_t error;
-
-		bson_t *selector = BCON_NEW ("user_id_", BCON_UTF8 (user_id.c_str ()));
-
-		bson_t *update = BCON_NEW ("$addToSet", "{", "friends_",
-								   "{",
-								   "user_id_", BCON_UTF8 (friend_id.c_str ()),
-								   "laber_", BCON_UTF8 (friend_name.c_str ()),
-								   "}",
-								   "}");
-
-		if (!mongoc_collection_update (user_clt_, MONGOC_UPDATE_NONE,
-			selector, update, NULL, &error))
-		{
-			char *update_json = bson_as_json (update, NULL);
-			if (update_json)
-			{
-				logger_warn ("mongoc_collection_update error:%s,update:%s",
-							 error.message,
-							 update_json);
-				bson_free (update_json);
-			}
-		}
-		else
-			ret = true;
-		if (selector)
-			bson_destroy (selector);
-		if (update)
-			bson_destroy (update);
-		return ret;
+		
 	}
 	/*
 	mongo shell
@@ -736,41 +618,10 @@ namespace ychat
 			{ $pull:{"friends_":{"user_id_":"192282783"}}});
 
 	*/
-	bool client_session_t::del_friend_from_mongodb (const std::string &user_id,
+	bool client_session_t::del_friend_from_db (const std::string &user_id,
 													const std::string &friend_id)
 	{
-		bool ret = false;
-		bson_error_t error;
-
-		bson_t *selector = BCON_NEW ("user_id_", BCON_UTF8 (user_id.c_str ()));
-		bson_t *update = BCON_NEW ("$pull",
-								   "{",
-								   "friends_",
-								   "{",
-								   "user_id_",
-								   BCON_UTF8 (friend_id.c_str ()),
-								   "}",
-								   "}");
-
-		if (!mongoc_collection_update (user_clt_, MONGOC_UPDATE_NONE,
-			selector, update, NULL, &error))
-		{
-			char *update_json = bson_as_json (update, NULL);
-			if (update_json)
-			{
-				logger_warn ("mongoc_collection_update error:%s,update:%s",
-							 error.message,
-							 update_json);
-				bson_free (update_json);
-			}
-		}
-		else
-			ret = true;
-		if (selector)
-			bson_destroy (selector);
-		if (update)
-			bson_destroy (update);
-		return ret;
+	
 
 	}
 	/*
@@ -780,120 +631,34 @@ namespace ychat
 
 	*/
 
-	bool client_session_t::update_friend_laber_to_mongodb (
+	bool client_session_t::update_friend_laber_to_db (
 		const std::string &user_id,
 		const std::string &friend_id,
 		const std::string &label)
 
 	{
-		bool ret = false;
-		bson_error_t error;
-
-		bson_t *selector = BCON_NEW ("user_id_",
-									 BCON_UTF8 (user_id.c_str ()),
-									 "friends_.user_id_",
-									 BCON_UTF8 (friend_id.c_str ()));
-		bson_t *update = BCON_NEW ("$set", "{",
-								   "friends_.$.laber_",
-								   BCON_UTF8 (label.c_str ()),
-								   "}");
-
-		if (!mongoc_collection_update (user_clt_, MONGOC_UPDATE_NONE,
-			selector, update, NULL, &error))
-		{
-			char *update_json = bson_as_json (update, NULL);
-			if (update_json)
-			{
-				logger_warn ("mongoc_collection_update error:%s,update:%s",
-							 error.message,
-							 update_json);
-				bson_free (update_json);
-			}
-		}
-		else
-			ret = true;
-		if (selector)
-			bson_destroy (selector);
-		if (update)
-			bson_destroy (update);
-		return ret;
+		//todo.
 	}
 	
-	bool client_session_t::update_join_group_result_to_mongodb(
+	bool client_session_t::update_join_group_result_to_db(
 		const std::string &user_id, 
 		const std::string &req_id, 
 		const char *result)
 	{
-		bson_t *selector = BCON_NEW("user_id_",
-									BCON_UTF8(user_id.c_str()),
-									"join_group_reqs_.req_id_",
-									BCON_UTF8(req_id.c_str()));
-
-		bson_t *update = BCON_NEW("$set", "{",
-								  "join_group_reqs_.$.result_",
-								  BCON_UTF8(result),
-								  "}");
-		bson_error_t error;
-		bool ret = false;
-		if(!mongoc_collection_update(user_clt_, MONGOC_UPDATE_NONE,
-		   selector, update, NULL, &error)) {
-			char *update_json = bson_as_json(update, NULL);
-			if(update_json) {
-				logger_warn("mongoc_collection_update error:%s,update:%s",
-							error.message,
-							update_json);
-				bson_free(update_json);
-			}
-		}
-		else
-			ret = true;
-		if(selector)
-			bson_destroy(selector);
-		if(update)
-			bson_destroy(update);
-		return ret;
+		//todo
 	}
 
-	bool client_session_t::group_add_user_to_mongo(const std::string &user_id,
+	bool client_session_t::group_add_user_to_db(const std::string &user_id,
 												   const std::string &username,
 												   const std::string& group_id)
 	{
-		bool ret = false;
-		bson_error_t error;
-
-		bson_t *selector = BCON_NEW("group_id_", BCON_UTF8(group_id.c_str()));
-		bson_t *update = BCON_NEW("$push",
-								  "{",
-								    "members_",
-								    "{",
-								      "user_id_",BCON_UTF8(user_id.c_str()),
-								      "label_",BCON_UTF8(username.c_str()),
-								     "}",
-								  "}");
-
-		if(!mongoc_collection_update(group_clt_, MONGOC_UPDATE_NONE,
-		   selector, update, NULL, &error)) {
-			char *update_json = bson_as_json(update, NULL);
-			if(update_json) {
-				logger_warn("mongoc_collection_update error:%s,update:%s",
-							error.message,
-							update_json);
-				bson_free(update_json);
-			}
-		}
-		else
-			ret = true;
-		if(selector)
-			bson_destroy(selector);
-		if(update)
-			bson_destroy(update);
-		return ret;
+		//todo...
 	}
 
 	bool client_session_t::handle_label_friend(msg_t * msg)
 	{
 		label_friend_t *labelf = (label_friend_t*)msg;
-		if (update_friend_laber_to_mongodb (labelf->from_,
+		if (update_friend_laber_to_db (labelf->from_,
 			labelf->to_,
 			labelf->label_) == false)
 		{
@@ -992,14 +757,14 @@ namespace ychat
 		std::string user_id = jgr->from_;
 		std::string req_id = jgr->req_id_;
 
-		if (update_join_group_result_to_mongodb(user_id, req_id, result)
+		if (update_join_group_result_to_db(user_id, req_id, result)
 			== false)
 		{
 			logger_warn("update_join_group_result_to_mongodb error");
 			return false;
 		}
 
-		if(update_join_group_result_to_mongodb(jgr->to_, req_id, result)
+		if(update_join_group_result_to_db(jgr->to_, req_id, result)
 		   == false) 
 		{
 			logger_warn("update_join_group_result_to_mongodb error");
@@ -1086,7 +851,7 @@ namespace ychat
 			return false;
 		}
 
-		if(del_user_from_mongo(msg->from_, lg->group_id_) == false)
+		if(del_user_from_db(msg->from_, lg->group_id_) == false)
 		{
 			logger_warn("del_user_from_mongo error");
 			return false;
@@ -1095,42 +860,11 @@ namespace ychat
 		notify_group_leave_member(msg->from_, username, lg->group_id_);
 	}
 
-	bool client_session_t::del_user_from_mongo(
+	bool client_session_t::del_user_from_db(
 		const std::string &user_id, 
 		const std::string &group_id)
 	{
-		bool ret = false;
-		bson_error_t error;
-
-		bson_t *selector = BCON_NEW("group_id_", BCON_UTF8(user_id.c_str()));
-		bson_t *update = BCON_NEW("$pull",
-								  "{",
-								  "members_",
-								  "{",
-								    "user_id_",
-								     BCON_UTF8(user_id.c_str()),
-								  "}",
-								  "}");
-
-		if(!mongoc_collection_update(group_clt_, MONGOC_UPDATE_NONE,
-		   selector, update, NULL, &error)) 
-		{
-			char *update_json = bson_as_json(update, NULL);
-			if(update_json) 
-			{
-				logger_warn("mongoc_collection_update error:%s,update:%s",
-							error.message,
-							update_json);
-				bson_free(update_json);
-			}
-		}
-		else
-			ret = true;
-		if(selector)
-			bson_destroy(selector);
-		if(update)
-			bson_destroy(update);
-		return ret;
+		//todo...
 	}
 
 	bool client_session_t::del_user_from_redis(const std::string &user_id, 
@@ -1181,7 +915,25 @@ namespace ychat
 		}
 	}
 
-	bool client_session_t::handle_group_del_menber(msg_t * msg)
+	bool client_session_t::check_group_member_from_mongo (
+		const std::string & group_id, 
+		const std::string & user_id)
+	{
+		
+	}
+
+	bool client_session_t::check_group_member_from_redis (
+		const std::string & group_id, 
+		const std::string &user_id)
+	{
+		acl::string key;
+		key.format ("%s%s",g_config.group_map_prefix_,group_id.c_str());
+		acl::redis cmd (redis_cluster_);
+
+		return cmd.hexists (key.c_str (), user_id.c_str ());
+	}
+
+	bool client_session_t::handle_group_del_menber (msg_t * msg)
 	{
 		group_del_member_t *gdm = (group_del_member_t*)msg;
 		std::string creator;
@@ -1189,7 +941,17 @@ namespace ychat
 			logger_warn("get_group_creator error");
 			return false;
 		}
-		//todo...
+
+		if (creator != gdm->from_)
+		{
+			logger_warn ("group_del_member error,creator:%s from:%s",
+						 creator.c_str(),msg->from_.c_str());
+			return false;
+		}
+		if (check_group_member(gdm->group_id_,gdm->user_id_) == false)
+		{
+
+		}
 	}
 
 }

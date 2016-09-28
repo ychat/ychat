@@ -11,12 +11,7 @@ namespace ychat
 
 	outstream_pool_mgr_t::~outstream_pool_mgr_t()
 	{
-		for(outstream_pools_itr_t itr = outstream_pools_.begin();
-			itr != outstream_pools_.end();
-			itr++) 
-		{
-			delete itr->second;
-		}
+
 	}
 
 	acl::connect_pool* outstream_pool_mgr_t::create_pool (const char* addr, 

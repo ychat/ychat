@@ -156,6 +156,7 @@ namespace ychat
 
 	struct group_del_member_t : msg_t
 	{
+		std::string user_id_;
 		group_id_t group_id_;
 	};
 

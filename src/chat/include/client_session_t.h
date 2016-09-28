@@ -62,6 +62,9 @@ namespace ychat
 		bool check_friend_from_redis (const std::string &client_id,
 						   const std::string &friend_id);
 
+		bool check_group_member(const std::string &group_id,
+								const std::string &user_id);
+
 		bool add_friend_to_redis (std::string user_id, std::string friend_id,
 								  const std::string &friend_name);
 
@@ -82,6 +85,8 @@ namespace ychat
 		bool del_user_from_redis(const std::string &user_id, 
 								 const std::string &group_id);
 
+		bool check_group_member_from_redis (const std::string & group_id, 
+											const std::string &user_id);
 		//
 
 		//mongo interface
@@ -97,22 +102,22 @@ namespace ychat
 		bool add_friend_to_db (std::string client_id, std::string friend_id,
 							   const std::string &friend_name);
 
-		bool del_friend_from_mongodb (const std::string &user_id, 
+		bool del_friend_from_db (const std::string &user_id, 
 									  const std::string &friend_id);
 
-		bool update_friend_laber_to_mongodb (const std::string &user_id,
+		bool update_friend_laber_to_db (const std::string &user_id,
 											 const std::string &friend_id,
 											 const std::string &label);
 
-		bool update_join_group_result_to_mongodb(const std::string &user_id,
+		bool update_join_group_result_to_db(const std::string &user_id,
 												 const std::string &req_id,
 												 const char *result);
 
-		bool group_add_user_to_mongo(const std::string &user_id,
+		bool group_add_user_to_db(const std::string &user_id,
 									 const std::string &username,
 									 const std::string& group_id);
 
-		bool del_user_from_mongo(const std::string &user_id,
+		bool del_user_from_db(const std::string &user_id,
 								 const std::string &group_id);
 
 		//helper function
@@ -128,7 +133,7 @@ namespace ychat
 		void notify_group_leave_member(const std::string &user_id,
 									   const std::string &username, 
 									   const std::string &group_id);
-
+		
 		bool is_stop_;
 		bool is_auth_;
 		acl::redis_client_cluster *redis_cluster_;

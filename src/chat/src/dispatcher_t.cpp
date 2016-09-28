@@ -134,8 +134,8 @@ namespace ychat
 			logger_warn ("get %s outstream_pool error,", location.c_str ());
 			false;
 		}
-
-		outstream *out = (outstream*)outstream_pool->peek ();
+		acl::connect_guard guard (*outstream_pool);
+		outstream *out = (outstream*)guard.peek ();
 		if (out == NULL)
 		{
 			logger_warn ("peek outstream error");
