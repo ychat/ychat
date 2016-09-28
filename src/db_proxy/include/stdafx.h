@@ -13,7 +13,8 @@
 #include <bson.h>
 #include <bcon.h>
 #include <mongoc.h>
-
+#include <list>
+#include <stdint.h>
 
 #include "lib_acl.h"
 #include "acl_cpp/lib_acl.hpp"

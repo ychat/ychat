@@ -141,10 +141,5 @@ namespace ychat
 		int msg_queues_;
 		std::string mongodb_addr_;
 		//mongodb
-		mongoc_client_t      *mongo_client_;
-		mongoc_database_t    *mongo_db_;
-		mongoc_collection_t  *user_clt_;
-		mongoc_collection_t  *chat_log_clt_;
-		mongoc_collection_t  *group_clt_;
 	};
 }

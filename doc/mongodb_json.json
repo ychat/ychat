@@ -27,8 +27,8 @@
           {
             "req_id_": "",
             "group_id_": "",
-            "user_id_": "",
-            "creator_": "",
+            "from_": "",
+			"to_": "",
             "text_msg_": "",
             "result_": "",
             "time_": ""

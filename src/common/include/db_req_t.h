@@ -36,6 +36,9 @@ namespace db
 		e_update_join_group_result_req,
 		e_update_join_group_result_resp,
 
+		e_req_join_group_req,
+		e_req_join_group_resp_t,
+
 		e_group_add_user_req,
 		e_group_add_user_resp,
 
@@ -141,7 +144,16 @@ namespace db
 		std::string user_id_;
 		acl::string to_json ();
 	};
-
+	struct req_join_group_req_t :req_t
+	{
+		req_join_group_req_t();
+		std::string user_id_;
+		std::string from_;
+		std::string to_;
+		std::string group_id_;
+		std::string text_msg_;
+		acl::string to_json();
+	};
 	struct group_add_user_req_t:req_t
 	{
 		group_add_user_req_t ();
@@ -203,6 +215,10 @@ namespace db
 		req_add_friend_resp_t (int64_t req_id, bool result);
 	};
 
+	struct req_join_group_resp_t :resp_t
+	{
+		req_join_group_resp_t(int64_t req_id, bool result);
+	};
 	req_t *to_req (const acl::string &json);
 
 	resp_t *to_resp (const acl::string &json);

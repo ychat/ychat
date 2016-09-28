@@ -140,6 +140,28 @@ namespace db
 		return json.to_string ();
 	}
 
+	req_join_group_req_t::req_join_group_req_t()
+	{
+		type_ = e_req_join_group_req;
+	}
+
+	acl::string req_join_group_req_t::to_json()
+	{
+		acl::json json;
+		json.get_root().
+			add_child(json.create_node("req_id_", req_id_)).
+			add_child(json.create_node("type_", type_to_str(type_))).
+			add_child(json.create_node("user_id_", user_id_.c_str())).
+			add_child(json.create_node("group_id_", group_id_.c_str())).
+			add_child(json.create_node("from_", from_.c_str())).
+			add_child(json.create_node("to_", to_.c_str())).
+			add_child(json.create_node("text_msg_",text_msg_.c_str()));
+
+		return json.to_string();
+	}
+
+
+
 	group_add_user_req_t::group_add_user_req_t ()
 	{
 		type_ = e_group_add_user_req;
@@ -229,6 +251,13 @@ namespace db
 		type_ = e_req_add_friend_resp;
 		status_ = result?e_ok:e_failed;
 	}
+	req_join_group_resp_t::req_join_group_resp_t(int64_t req_id, bool result)
+	{
+		req_id_ = req_id;
+		type_ = e_req_join_group_resp_t;
+		status_ = result ? e_ok : e_failed;
+	}
+
 
 	add_friend_resp_t::add_friend_resp_t (int64_t req_id, bool result)
 	{
@@ -519,14 +548,26 @@ namespace db
 		}
 		else if (type == type_to_str (e_update_join_group_result_req))
 		{
-			update_join_group_result_req_t *req = new update_join_group_result_req_t;
+			update_join_group_result_req_t *req 
+				= new update_join_group_result_req_t;
+
 			get_json_node (json, "req_id_", req->req_id_);
 			get_json_node (json, "join_group_req_id_", req->join_group_req_id_);
 			get_json_node (json, "result_", req->result_);
 			get_json_node (json, "user_id_", req->user_id_);
 			return req;
 		}
-		else if (type == type_to_str (e_group_add_user_resp))
+		else if (type == type_to_str(e_req_join_group_req))
+		{
+			req_join_group_req_t *req = new req_join_group_req_t;
+			get_json_node(json, "req_id_", req->req_id_);
+			get_json_node(json, "group_id_", req->group_id_);
+			get_json_node(json, "from_", req->from_);
+			get_json_node(json, "to_", req->to_);
+			get_json_node(json, "user_id_", req->user_id_);
+			get_json_node(json, "text_msg_", req->text_msg_);
+		}
+		else if (type == type_to_str (e_group_add_user_req))
 		{
 			group_add_user_req_t *req = new group_add_user_req_t;
 			get_json_node (json, "req_id_", req->req_id_);
@@ -535,7 +576,7 @@ namespace db
 			get_json_node (json, "user_id_", req->user_id_);
 			return req;
 		}
-		else if (type == type_to_str (e_group_del_user_resp))
+		else if (type == type_to_str (e_group_del_user_req))
 		{
 			group_del_user_req_t *req = new group_del_user_req_t;
 			get_json_node (json, "req_id_", req->req_id_);

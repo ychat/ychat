@@ -6,7 +6,10 @@ extern acl::master_int_tbl var_conf_int_tab[];
 extern acl::master_int64_tbl var_conf_int64_tab[];
 
 //////////////////////////////////////////////////////////////////////////
-
+namespace ychat
+{
+	class db_proxy_t;
+}
 class master_service : public acl::master_fiber
 {
 public:
@@ -27,4 +30,5 @@ protected:
 	void proc_on_exit(void);
 
 private:
+	ychat::db_proxy_t *db_proxy_;
 };
